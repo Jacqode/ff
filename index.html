@@ -58,7 +58,7 @@
 <div id="main" style="margin-top: 170px; padding: 12px;">
 
     <!-- Feed -->
-    <h3>Feed</h3>
+    <h3>Feed (seneste 5)</h3>
     <div id="feed"></div>
 
     <!-- Stats -->
@@ -97,6 +97,8 @@ const activities = [
     "Læg‑løft – op på tæerne og ned igen. ⬆️",
     "Ryst kroppen – slip spændinger i arme og ben. 💃"
 ];
+
+const FEED_DISPLAY_LIMIT = 5; // vis kun de seneste 5 i feedet
 
 let state = {
     name: localStorage.getItem("name") || "ukendt",
@@ -142,14 +144,31 @@ function showMicro(message) {
     setTimeout(() => m.style.display = "none", 6000);
 }
 
+/**
+ * Render feed: vis kun de seneste FEED_DISPLAY_LIMIT entries.
+ * state.feed er stadig fuld historik; vi begrænser kun visningen.
+ */
 function renderFeed() {
     const feedDiv = document.getElementById("feed");
     feedDiv.innerHTML = "";
-    state.feed.forEach(item => {
+
+    // Tag de første FEED_DISPLAY_LIMIT elementer fra state.feed
+    const toShow = state.feed.slice(0, FEED_DISPLAY_LIMIT);
+
+    toShow.forEach(item => {
         const div = document.createElement("div");
         div.textContent = item;
         feedDiv.appendChild(div);
     });
+
+    // Hvis der er flere end limit, vis en lille note
+    if (state.feed.length > FEED_DISPLAY_LIMIT) {
+        const more = document.createElement("div");
+        more.style.marginTop = "8px";
+        more.style.color = "#666";
+        more.textContent = `Viser ${FEED_DISPLAY_LIMIT} af ${state.feed.length} pauser (nyeste øverst)`;
+        feedDiv.appendChild(more);
+    }
 }
 
 function saveState() {
@@ -190,10 +209,17 @@ document.getElementById("doneBtn").onclick = () => {
         document.getElementById("teamTotal").textContent = state.teamTotal;
     }
 
-    // feed
+    // feed: nyeste øverst
     const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
     const entry = `${state.name}: ${activity} ${time}`;
     state.feed.unshift(entry);
+
+    // valgfrit: begræns intern historik til fx 200 entries for at undgå uendelig vækst
+    const MAX_HISTORY = 200;
+    if (state.feed.length > MAX_HISTORY) {
+        state.feed = state.feed.slice(0, MAX_HISTORY);
+    }
+
     renderFeed();
 
     // microfeedback (6s)
