@@ -14,6 +14,14 @@
     <button id="doneBtn">Færdig</button>
 </div>
 
+<!-- Trivselspuls -->
+<h3>Trivselspuls</h3>
+<div id="pulseBox">
+    <button class="pulseBtn" data-pulse="god">God 😊</button>
+    <button class="pulseBtn" data-pulse="ok">OK 🙂</button>
+    <button class="pulseBtn" data-pulse="presset">Presset 😟</button>
+</div>
+
 <!-- Microfeedback -->
 <div id="micro" style="display:none;">Godt gået – fortsæt den gode vane!</div>
 
@@ -26,11 +34,23 @@
 <div id="stats">
     <div>Pauser i dag: <span id="todayCount">0</span></div>
     <div>Pauser i alt: <span id="totalCount">0</span></div>
+    <div>Seneste trivselspuls: <span id="lastPulse">–</span></div>
+</div>
+
+<!-- Team Stats -->
+<h3>Team</h3>
+<div id="teamBox">
+    <div>Team: <span id="teamName">Ingen team valgt</span></div>
+    <div>Team‑pauser i dag: <span id="teamToday">0</span></div>
+    <div>Team‑pauser i alt: <span id="teamTotal">0</span></div>
 </div>
 
 <!-- Indstillinger -->
 <h3>Indstillinger</h3>
 <label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
+
+<label>Teamnavn: <input id="teamInput" placeholder="Teamnavn"></label><br><br>
+
 <label>Minutter mellem påmindelser:
     <input id="reminderInput" type="number" min="5" max="180" value="30">
 </label>
@@ -52,7 +72,10 @@ let state = {
     totalCount: Number(localStorage.getItem("totalCount") || 0),
     reminderMinutes: Number(localStorage.getItem("reminderMinutes") || 30),
     feed: JSON.parse(localStorage.getItem("feed") || "[]"),
-    team: localStorage.getItem("team") || null // placeholder for ét team ad gangen
+    lastPulse: localStorage.getItem("lastPulse") || "–",
+    team: localStorage.getItem("team") || "",
+    teamToday: Number(localStorage.getItem("teamToday") || 0),
+    teamTotal: Number(localStorage.getItem("teamTotal") || 0)
 };
 
 // ----------------------
@@ -61,6 +84,10 @@ let state = {
 document.getElementById("greeting").textContent = "Hej " + state.name;
 document.getElementById("todayCount").textContent = state.todayCount;
 document.getElementById("totalCount").textContent = state.totalCount;
+document.getElementById("lastPulse").textContent = state.lastPulse;
+document.getElementById("teamName").textContent = state.team || "Ingen team valgt";
+document.getElementById("teamToday").textContent = state.teamToday;
+document.getElementById("teamTotal").textContent = state.teamTotal;
 document.getElementById("reminderInput").value = state.reminderMinutes;
 renderFeed();
 
@@ -78,8 +105,17 @@ document.getElementById("doneBtn").onclick = () => {
     // registrer pause (kun ét sted)
     state.todayCount++;
     state.totalCount++;
+
+    // team stats (kun ét team ad gangen)
+    if (state.team) {
+        state.teamToday++;
+        state.teamTotal++;
+    }
+
     document.getElementById("todayCount").textContent = state.todayCount;
     document.getElementById("totalCount").textContent = state.totalCount;
+    document.getElementById("teamToday").textContent = state.teamToday;
+    document.getElementById("teamTotal").textContent = state.teamTotal;
 
     // feed
     const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
@@ -92,6 +128,23 @@ document.getElementById("doneBtn").onclick = () => {
 
     saveState();
 };
+
+// ----------------------
+// TRIVSELSPULS
+// ----------------------
+document.querySelectorAll(".pulseBtn").forEach(btn => {
+    btn.onclick = () => {
+        const pulse = btn.dataset.pulse;
+        state.lastPulse = pulse;
+        document.getElementById("lastPulse").textContent = pulse;
+
+        const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
+        state.feed.unshift(`${state.name}: Trivselspuls – ${pulse} ${time}`);
+
+        renderFeed();
+        saveState();
+    };
+});
 
 // ----------------------
 // FEED
@@ -121,6 +174,15 @@ function showMicro() {
 document.getElementById("nameInput").onchange = (e) => {
     state.name = e.target.value || "ukendt";
     document.getElementById("greeting").textContent = "Hej " + state.name;
+    saveState();
+};
+
+// ----------------------
+// TEAM
+// ----------------------
+document.getElementById("teamInput").onchange = (e) => {
+    state.team = e.target.value;
+    document.getElementById("teamName").textContent = state.team || "Ingen team valgt";
     saveState();
 };
 
@@ -166,7 +228,10 @@ function saveState() {
     localStorage.setItem("totalCount", state.totalCount);
     localStorage.setItem("reminderMinutes", state.reminderMinutes);
     localStorage.setItem("feed", JSON.stringify(state.feed));
+    localStorage.setItem("lastPulse", state.lastPulse);
     localStorage.setItem("team", state.team);
+    localStorage.setItem("teamToday", state.teamToday);
+    localStorage.setItem("teamTotal", state.teamTotal);
 }
 </script>
 
