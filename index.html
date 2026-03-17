@@ -6,32 +6,86 @@
 </head>
 <body>
 
-<h2 id="greeting">Hej ukendt</h2>
-
-<!-- Aktivitet + knap + microfeedback -->
-<div id="activityBox">
-    <h1 id="activityText">Få aktivitet</h1>
-    <button id="doneBtn">Færdig</button>
-    <div id="micro" style="display:none;">Godt gået – fortsæt den gode vane!</div>
+<!-- Header (fast øverst) -->
+<div id="header" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    z-index: 20;
+">
+    <div id="greeting">Hej ukendt</div>
+    <div id="teamLabel">Team: Ingen</div>
 </div>
 
-<!-- Feed -->
-<h3>Feed</h3>
-<div id="feed"></div>
+<!-- Aktivitetskort (fast under header) -->
+<div id="activityBox" style="
+    position: fixed;
+    top: 56px; /* højde af header + lidt luft */
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    z-index: 19;
+">
+    <!-- Knap: Få aktivitet -->
+    <div style="margin-bottom:8px;">
+        <button id="getActivityBtn">Få aktivitet</button>
+    </div>
 
-<!-- Stats -->
-<h3>Stats</h3>
-<div id="stats">
-    <div>Pauser i dag: <span id="todayCount">0</span></div>
-    <div>Pauser i alt: <span id="totalCount">0</span></div>
+    <!-- Stor tekst: Aktivitetstitel -->
+    <div>
+        <h1 id="activityText" style="margin:6px 0 10px 0; font-size:1.1rem;">Få aktivitet</h1>
+    </div>
+
+    <!-- Knap: Færdig (lige under aktiviteten) -->
+    <div style="margin-bottom:8px;">
+        <button id="doneBtn">Færdig</button>
+    </div>
+
+    <!-- Microfeedback (lige under færdig knappen) -->
+    <div id="micro" style="display:none; color:#0a0; font-weight:600;">Godt gået – fortsæt den gode vane!</div>
 </div>
 
-<!-- Indstillinger -->
-<h3>Indstillinger</h3>
-<label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
-<label>Minutter mellem påmindelser:
-    <input id="reminderInput" type="number" min="5" max="180" value="30">
-</label>
+<!-- Hovedindhold: flyttet ned så det ikke ligger under de faste elementer -->
+<div id="main" style="margin-top: 170px; padding: 12px;">
+
+    <!-- Feed -->
+    <h3>Feed</h3>
+    <div id="feed"></div>
+
+    <!-- Stats -->
+    <h3>Stats</h3>
+    <div id="stats">
+        <div>Pauser i dag: <span id="todayCount">0</span></div>
+        <div>Pauser i alt: <span id="totalCount">0</span></div>
+        <div>Seneste trivselspuls: <span id="lastPulse">–</span></div>
+    </div>
+
+    <!-- Team Stats (vises hvis team valgt) -->
+    <h3>Team</h3>
+    <div id="teamBox">
+        <div>Teamnavn: <span id="teamName">Ingen</span></div>
+        <div>Team‑pauser i dag: <span id="teamToday">0</span></div>
+        <div>Team‑pauser i alt: <span id="teamTotal">0</span></div>
+    </div>
+
+    <!-- Indstillinger -->
+    <h3>Indstillinger</h3>
+    <label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
+    <label>Teamnavn: <input id="teamInput" placeholder="Teamnavn"></label><br><br>
+    <label>Minutter mellem påmindelser:
+        <input id="reminderInput" type="number" min="5" max="180" value="30">
+    </label>
+
+</div>
 
 <script>
 // ----------------------
@@ -49,50 +103,45 @@ let state = {
     todayCount: Number(localStorage.getItem("todayCount") || 0),
     totalCount: Number(localStorage.getItem("totalCount") || 0),
     reminderMinutes: Number(localStorage.getItem("reminderMinutes") || 30),
-    feed: JSON.parse(localStorage.getItem("feed") || "[]")
+    feed: JSON.parse(localStorage.getItem("feed") || "[]"),
+    lastPulse: localStorage.getItem("lastPulse") || "–",
+    team: localStorage.getItem("team") || "",
+    teamToday: Number(localStorage.getItem("teamToday") || 0),
+    teamTotal: Number(localStorage.getItem("teamTotal") || 0)
 };
 
 // ----------------------
 // INIT
 // ----------------------
-document.getElementById("greeting").textContent = "Hej " + state.name;
-document.getElementById("todayCount").textContent = state.todayCount;
-document.getElementById("totalCount").textContent = state.totalCount;
-document.getElementById("reminderInput").value = state.reminderMinutes;
-renderFeed();
+function initUI() {
+    document.getElementById("greeting").textContent = "Hej " + state.name;
+    document.getElementById("todayCount").textContent = state.todayCount;
+    document.getElementById("totalCount").textContent = state.totalCount;
+    document.getElementById("lastPulse").textContent = state.lastPulse;
+    document.getElementById("teamName").textContent = state.team || "Ingen";
+    document.getElementById("teamToday").textContent = state.teamToday;
+    document.getElementById("teamTotal").textContent = state.teamTotal;
+    document.getElementById("teamLabel").textContent = "Team: " + (state.team || "Ingen");
+    document.getElementById("reminderInput").value = state.reminderMinutes;
+    renderFeed();
+}
+initUI();
 
 // ----------------------
-// HENT NY AKTIVITET
+// HJÆLPEFUNKTIONER
 // ----------------------
 function getRandomActivity() {
     return activities[Math.floor(Math.random() * activities.length)];
 }
 
-document.getElementById("doneBtn").onclick = () => {
-    const activity = getRandomActivity();
-    document.getElementById("activityText").textContent = activity;
+function showMicro(message) {
+    const m = document.getElementById("micro");
+    m.textContent = message || "Godt gået – fortsæt den gode vane!";
+    m.style.display = "block";
+    // vis i 6 sekunder
+    setTimeout(() => m.style.display = "none", 6000);
+}
 
-    // registrer pause
-    state.todayCount++;
-    state.totalCount++;
-    document.getElementById("todayCount").textContent = state.todayCount;
-    document.getElementById("totalCount").textContent = state.totalCount;
-
-    // feed
-    const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
-    const entry = `${state.name}: ${activity} ${time}`;
-    state.feed.unshift(entry);
-    renderFeed();
-
-    // microfeedback
-    showMicro();
-
-    saveState();
-};
-
-// ----------------------
-// FEED
-// ----------------------
 function renderFeed() {
     const feedDiv = document.getElementById("feed");
     feedDiv.innerHTML = "";
@@ -103,18 +152,63 @@ function renderFeed() {
     });
 }
 
-// ----------------------
-// MICROFEEDBACK
-// ----------------------
-function showMicro() {
-    const m = document.getElementById("micro");
-    m.style.display = "block";
-    setTimeout(() => m.style.display = "none", 1500);
+function saveState() {
+    localStorage.setItem("name", state.name);
+    localStorage.setItem("todayCount", state.todayCount);
+    localStorage.setItem("totalCount", state.totalCount);
+    localStorage.setItem("reminderMinutes", state.reminderMinutes);
+    localStorage.setItem("feed", JSON.stringify(state.feed));
+    localStorage.setItem("lastPulse", state.lastPulse);
+    localStorage.setItem("team", state.team);
+    localStorage.setItem("teamToday", state.teamToday);
+    localStorage.setItem("teamTotal", state.teamTotal);
 }
 
 // ----------------------
-// NAVN
+// Knapper: Få aktivitet (kun viser aktivitet)
+document.getElementById("getActivityBtn").onclick = () => {
+    const activity = getRandomActivity();
+    document.getElementById("activityText").textContent = activity;
+};
+
 // ----------------------
+// Knap: Færdig (registrerer pause)
+document.getElementById("doneBtn").onclick = () => {
+    const activity = document.getElementById("activityText").textContent || getRandomActivity();
+
+    // registrer pause
+    state.todayCount++;
+    state.totalCount++;
+    document.getElementById("todayCount").textContent = state.todayCount;
+    document.getElementById("totalCount").textContent = state.totalCount;
+
+    // team stats (hvis team sat)
+    if (state.team) {
+        state.teamToday++;
+        state.teamTotal++;
+        document.getElementById("teamToday").textContent = state.teamToday;
+        document.getElementById("teamTotal").textContent = state.teamTotal;
+    }
+
+    // feed
+    const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
+    const entry = `${state.name}: ${activity} ${time}`;
+    state.feed.unshift(entry);
+    renderFeed();
+
+    // microfeedback (6s)
+    showMicro("Godt gået – fortsæt den gode vane!");
+
+    saveState();
+};
+
+// ----------------------
+// TRIVSELSPULS (placeholder knapper kan tilføjes senere)
+// ----------------------
+
+// ----------------------
+// NAVN
+document.getElementById("nameInput").value = state.name === "ukendt" ? "" : state.name;
 document.getElementById("nameInput").onchange = (e) => {
     state.name = e.target.value || "ukendt";
     document.getElementById("greeting").textContent = "Hej " + state.name;
@@ -122,10 +216,19 @@ document.getElementById("nameInput").onchange = (e) => {
 };
 
 // ----------------------
-// PÅMINDELSER
+// TEAM
+document.getElementById("teamInput").value = state.team || "";
+document.getElementById("teamInput").onchange = (e) => {
+    state.team = e.target.value.trim();
+    document.getElementById("teamName").textContent = state.team || "Ingen";
+    document.getElementById("teamLabel").textContent = "Team: " + (state.team || "Ingen");
+    saveState();
+};
+
 // ----------------------
+// PÅMINDELSER
 document.getElementById("reminderInput").onchange = (e) => {
-    state.reminderMinutes = Number(e.target.value);
+    state.reminderMinutes = Number(e.target.value) || 30;
     saveState();
 };
 
@@ -138,6 +241,7 @@ function notify() {
     n.style.right = "10px";
     n.style.padding = "10px";
     n.style.background = "#eee";
+    n.style.border = "1px solid #ddd";
     document.body.appendChild(n);
     setTimeout(() => n.remove(), 5000);
 }
@@ -146,20 +250,9 @@ setInterval(() => notify(), state.reminderMinutes * 60 * 1000);
 
 // ----------------------
 // OFFLINE ROBUSTHED
-// ----------------------
 window.addEventListener("online", () => console.log("Synk til backend her"));
 window.addEventListener("offline", () => console.log("Offline – gemmer lokalt"));
 
-// ----------------------
-// GEM STATE
-// ----------------------
-function saveState() {
-    localStorage.setItem("name", state.name);
-    localStorage.setItem("todayCount", state.todayCount);
-    localStorage.setItem("totalCount", state.totalCount);
-    localStorage.setItem("reminderMinutes", state.reminderMinutes);
-    localStorage.setItem("feed", JSON.stringify(state.feed));
-}
 </script>
 
 </body>
