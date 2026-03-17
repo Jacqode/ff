@@ -2,35 +2,173 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusFlow</title>
-
 </head>
-
 <body>
 
-    <h1>FocusFlow</h1>
+<h2 id="greeting">Hej ukendt</h2>
 
-    <button onclick="getActivity()">Få aktivitet</button>
+<!-- Aktivitet -->
+<div id="activityBox">
+    <h1 id="activityText">Få aktivitet</h1>
+    <button id="doneBtn">Færdig</button>
+</div>
 
-    <div id="activity-box"></div>
+<!-- Microfeedback -->
+<div id="micro" style="display:none;">Godt gået – fortsæt den gode vane!</div>
 
-    <script>
-        const activities = [
-            "Tag 3 dybe vejrtrækninger",
-            "Stræk nakken i 20 sekunder",
-            "Rejs dig og ryst skuldrene",
-            "Fokuser på et punkt i rummet i 10 sekunder",
-            "Luk øjnene og slap af i kæben",
-            "Tag 5 langsomme vejrtrækninger",
-            "Rul skuldrene 5 gange bagud"
-        ];
+<!-- Feed -->
+<h3>Feed</h3>
+<div id="feed"></div>
 
-        function getActivity() {
-            const random = Math.floor(Math.random() * activities.length);
-            document.getElementById("activity-box").textContent = activities[random];
-        }
-    </script>
+<!-- Stats -->
+<h3>Stats</h3>
+<div id="stats">
+    <div>Pauser i dag: <span id="todayCount">0</span></div>
+    <div>Pauser i alt: <span id="totalCount">0</span></div>
+</div>
+
+<!-- Indstillinger -->
+<h3>Indstillinger</h3>
+<label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
+<label>Minutter mellem påmindelser:
+    <input id="reminderInput" type="number" min="5" max="180" value="30">
+</label>
+
+<script>
+// ----------------------
+// DATA
+// ----------------------
+const activities = [
+    "Stå‑kat – rund ryggen frem og svaj den let tilbage, skift langsomt mellem de to. 🐈",
+    "Skulderrul bagud – store cirkler for at løsne spændinger. 🌀",
+    "Læg‑løft – op på tæerne og ned igen. ⬆️",
+    "Ryst kroppen – slip spændinger i arme og ben. 💃"
+];
+
+let state = {
+    name: localStorage.getItem("name") || "ukendt",
+    todayCount: Number(localStorage.getItem("todayCount") || 0),
+    totalCount: Number(localStorage.getItem("totalCount") || 0),
+    reminderMinutes: Number(localStorage.getItem("reminderMinutes") || 30),
+    feed: JSON.parse(localStorage.getItem("feed") || "[]"),
+    team: localStorage.getItem("team") || null // placeholder for ét team ad gangen
+};
+
+// ----------------------
+// INIT
+// ----------------------
+document.getElementById("greeting").textContent = "Hej " + state.name;
+document.getElementById("todayCount").textContent = state.todayCount;
+document.getElementById("totalCount").textContent = state.totalCount;
+document.getElementById("reminderInput").value = state.reminderMinutes;
+renderFeed();
+
+// ----------------------
+// HENT NY AKTIVITET
+// ----------------------
+function getRandomActivity() {
+    return activities[Math.floor(Math.random() * activities.length)];
+}
+
+document.getElementById("doneBtn").onclick = () => {
+    const activity = getRandomActivity();
+    document.getElementById("activityText").textContent = activity;
+
+    // registrer pause (kun ét sted)
+    state.todayCount++;
+    state.totalCount++;
+    document.getElementById("todayCount").textContent = state.todayCount;
+    document.getElementById("totalCount").textContent = state.totalCount;
+
+    // feed
+    const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
+    const entry = `${state.name}: ${activity} ${time}`;
+    state.feed.unshift(entry);
+    renderFeed();
+
+    // microfeedback
+    showMicro();
+
+    saveState();
+};
+
+// ----------------------
+// FEED
+// ----------------------
+function renderFeed() {
+    const feedDiv = document.getElementById("feed");
+    feedDiv.innerHTML = "";
+    state.feed.forEach(item => {
+        const div = document.createElement("div");
+        div.textContent = item;
+        feedDiv.appendChild(div);
+    });
+}
+
+// ----------------------
+// MICROFEEDBACK
+// ----------------------
+function showMicro() {
+    const m = document.getElementById("micro");
+    m.style.display = "block";
+    setTimeout(() => m.style.display = "none", 1500);
+}
+
+// ----------------------
+// NAVN
+// ----------------------
+document.getElementById("nameInput").onchange = (e) => {
+    state.name = e.target.value || "ukendt";
+    document.getElementById("greeting").textContent = "Hej " + state.name;
+    saveState();
+};
+
+// ----------------------
+// PÅMINDELSER
+// ----------------------
+document.getElementById("reminderInput").onchange = (e) => {
+    state.reminderMinutes = Number(e.target.value);
+    saveState();
+};
+
+// Diskret notifikation nederst til højre
+function notify() {
+    const n = document.createElement("div");
+    n.textContent = "Tid til en kort pause?";
+    n.style.position = "fixed";
+    n.style.bottom = "10px";
+    n.style.right = "10px";
+    n.style.padding = "10px";
+    n.style.background = "#eee";
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 5000);
+}
+
+setInterval(() => notify(), state.reminderMinutes * 60 * 1000);
+
+// ----------------------
+// OFFLINE ROBUSTHED
+// ----------------------
+window.addEventListener("online", () => {
+    console.log("Online – synk til backend her (placeholder)");
+});
+window.addEventListener("offline", () => {
+    console.log("Offline – gemmer lokalt");
+});
+
+// ----------------------
+// GEM STATE
+// ----------------------
+function saveState() {
+    localStorage.setItem("name", state.name);
+    localStorage.setItem("todayCount", state.todayCount);
+    localStorage.setItem("totalCount", state.totalCount);
+    localStorage.setItem("reminderMinutes", state.reminderMinutes);
+    localStorage.setItem("feed", JSON.stringify(state.feed));
+    localStorage.setItem("team", state.team);
+}
+</script>
 
 </body>
 </html>
