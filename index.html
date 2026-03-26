@@ -17,7 +17,7 @@
 
 <div>
     <label>Organisation:
-        <input id="orgInput" placeholder="Organisation">
+        <input id="orgInput" readonly style="background:#eee;">
     </label>
 </div>
 
@@ -138,7 +138,7 @@ if (!user) {
 
     let org = Data.getOrgs().find(o => o.id === orgId);
     if (!org) {
-        org = { id: orgId, name: q.orgName || "Min organisation" };
+        org = { id: orgId, name: q.orgName || "Ukendt organisation" };
         Data.saveOrg(org);
     }
 
@@ -240,7 +240,10 @@ function renderAdmin() {
 
 function initUI() {
     document.getElementById("nameInput").value = user.name === "ukendt" ? "" : user.name;
-    document.getElementById("orgInput").value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
+
+    const org = Data.getOrgs().find(o => o.id === user.orgId);
+    document.getElementById("orgInput").value = org ? org.name : "";
+
     renderTeamSelect();
     renderStats();
     renderFeed();
@@ -254,24 +257,6 @@ initUI();
 document.getElementById("nameInput").onchange = e => {
     user.name = e.target.value || "ukendt";
     Data.saveUser(user);
-    renderAdmin();
-};
-
-document.getElementById("orgInput").onchange = e => {
-    const name = e.target.value.trim();
-    if (!name) return;
-
-    let org = Data.getOrgs().find(o => o.name === name);
-    if (!org) {
-        org = { id: "org_" + name.toLowerCase().replace(/\s+/g, "_"), name };
-        Data.saveOrg(org);
-    }
-
-    user.orgId = org.id;
-    Data.saveUser(user);
-    renderTeamSelect();
-    renderStats();
-    renderFeed();
     renderAdmin();
 };
 
