@@ -6,76 +6,64 @@
 </head>
 <body>
 
-<div id="header" style="position:fixed;top:0;left:0;right:0;background:white;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;z-index:20;">
-    <div id="greeting">Hej ukendt</div>
-    <div id="teamLabel">Team: Ingen</div>
-</div>
+<h1>Flow Focus</h1>
 
-<div id="hero" style="margin-top:60px;padding:32px 20px;text-align:center;background:#f7f7f7;border-bottom:1px solid #eee;">
-    <h1 style="margin:0 0 10px 0;font-size:1.6rem;font-weight:700;">FLOW FOCUS</h1>
-    <h2 style="margin:0 0 16px 0;font-size:1.1rem;font-weight:500;">Aktive mikropauser øger din energi</h2>
-    <p style="margin:0 0 20px 0;font-size:0.95rem;line-height:1.4;">
-        Tag en 20–60 sekunders bevægelsespause og mærk effekten.<br>
-        Track din energi på få sekunder og se dine mønstre.
-    </p>
-    <button id="startCheckinBtn" style="padding:12px 20px;font-size:1rem;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">
-        Start daglig check‑in
-    </button>
-</div>
-
-<div id="activityBox" style="position:fixed;top:260px;left:0;right:0;background:white;padding:12px;border-bottom:1px solid #eee;z-index:19;">
-    <div style="margin-bottom:8px;">
-        <button id="getActivityBtn">Få aktivitet</button>
-    </div>
-    <div>
-        <h1 id="activityText" style="margin:6px 0 10px 0;font-size:1.1rem;">Få aktivitet</h1>
-    </div>
-    <div style="margin-bottom:8px;">
-        <button id="doneBtn">Færdig</button>
-    </div>
-    <div id="micro" style="display:none;color:#0a0;font-weight:600;">Godt gået – fortsæt den gode vane!</div>
-</div>
-
-<div id="main" style="margin-top:380px;padding:12px;">
-
-    <h3>Dit teams seneste aktiviter:</h3>
-    <div id="feed"></div>
-
-    <h3>Stats</h3>
-    <div id="stats">
-        <div>Pauser i dag: <span id="todayCount">0</span></div>
-        <div>Pauser i alt: <span id="totalCount">0</span></div>
-    </div>
-
-    <h3>Team</h3>
-    <div id="teamBox">
-        <div>Organisation: <span id="orgName">Ingen</span></div>
-        <div>Teamnavn: <span id="teamName">Ingen</span></div>
-        <div>Team‑pauser i dag: <span id="teamToday">0</span></div>
-        <div>Team‑pauser i alt: <span id="teamTotal">0</span></div>
-    </div>
-
-    <h3>Indstillinger</h3>
-    <label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
-    <label>Organisation: <input id="orgInput" placeholder="Organisation"></label><br><br>
-    <label>Team: 
-        <select id="teamSelect"></select>
-    </label><br><br>
-    <label>Minutter mellem påmindelser:
-        <input id="reminderInput" type="number" min="5" max="180" value="30">
+<!-- USER INFO -->
+<div>
+    <label>Navn:
+        <input id="nameInput" placeholder="Dit navn">
     </label>
-
-    <h3>Overblik (organisationer, teams, brugere)</h3>
-    <h4>Organisationer</h4>
-    <ul id="orgList"></ul>
-
-    <h4>Teams</h4>
-    <ul id="teamList"></ul>
-
-    <h4>Brugere</h4>
-    <ul id="userList"></ul>
-
 </div>
+
+<div>
+    <label>Organisation:
+        <input id="orgInput" placeholder="Organisation">
+    </label>
+</div>
+
+<div>
+    <label>Team:
+        <select id="teamSelect"></select>
+    </label>
+</div>
+
+<hr>
+
+<!-- ACTIVITY -->
+<h2>Aktivitet</h2>
+<button id="getActivityBtn">Få aktivitet</button>
+<div id="activityText">Ingen aktivitet endnu</div>
+<button id="doneBtn">Færdig</button>
+<div id="micro" style="display:none;">Godt gået!</div>
+
+<hr>
+
+<!-- STATS -->
+<h2>Dine stats</h2>
+<div>Pauser i dag: <span id="todayCount">0</span></div>
+<div>Pauser i alt: <span id="totalCount">0</span></div>
+
+<h2>Team stats</h2>
+<div>Team pauser i dag: <span id="teamToday">0</span></div>
+<div>Team pauser i alt: <span id="teamTotal">0</span></div>
+
+<hr>
+
+<!-- FEED -->
+<h2>Team feed</h2>
+<div id="feed"></div>
+
+<hr>
+
+<!-- ADMIN OVERBLIK (midlertidigt) -->
+<h2>Organisationer</h2>
+<ul id="orgList"></ul>
+
+<h2>Teams</h2>
+<ul id="teamList"></ul>
+
+<h2>Brugere</h2>
+<ul id="userList"></ul>
 
 <script>
 // ----------------------
@@ -101,9 +89,6 @@ const Data = {
         if (idx === -1) teams.push(team); else teams[idx] = team;
         localStorage.setItem("teams", JSON.stringify(teams));
     },
-    getTeamById(id) {
-        return this.getTeams().find(t => t.id === id) || null;
-    },
 
     getUsers() {
         return JSON.parse(localStorage.getItem("users") || "[]");
@@ -128,17 +113,11 @@ const Data = {
     },
     getEvents() {
         return JSON.parse(localStorage.getItem("events") || "[]");
-    },
-    getEventsByUser(userId) {
-        return this.getEvents().filter(e => e.userId === userId);
-    },
-    getEventsByTeam(teamId) {
-        return this.getEvents().filter(e => e.teamId === teamId);
     }
 };
 
 // ----------------------
-// INIT USER / ORG / TEAM (med URL-onboarding)
+// URL ONBOARDING
 // ----------------------
 function parseQuery() {
     const params = {};
@@ -150,84 +129,37 @@ function parseQuery() {
     return params;
 }
 
-let reminderMinutes = Number(localStorage.getItem("reminderMinutes") || 30);
 let user = Data.getCurrentUser();
 
 if (!user) {
     const q = parseQuery();
-    let orgId = q.org || "org_default";
-    let teamId = q.team || "team_default";
+    const orgId = q.org || "org_default";
+    const teamId = q.team || "team_default";
 
-    let orgs = Data.getOrgs();
-    let org = orgs.find(o => o.id === orgId);
+    let org = Data.getOrgs().find(o => o.id === orgId);
     if (!org) {
         org = { id: orgId, name: q.orgName || "Min organisation" };
         Data.saveOrg(org);
     }
 
-    let teams = Data.getTeams();
-    let team = teams.find(t => t.id === teamId && t.orgId === org.id);
+    let team = Data.getTeams().find(t => t.id === teamId && t.orgId === orgId);
     if (!team) {
-        team = { id: teamId, orgId: org.id, name: q.teamName || "Standard team" };
+        team = { id: teamId, orgId: orgId, name: q.teamName || "Standard team" };
         Data.saveTeam(team);
     }
 
     user = {
         id: "user_" + Math.random().toString(36).slice(2),
         name: "ukendt",
-        orgId: org.id,
-        teamId: team.id
+        orgId: orgId,
+        teamId: teamId
     };
     Data.saveUser(user);
 }
 
 // ----------------------
-// AKTIVITETER
+// RENDER FUNKTIONER
 // ----------------------
-const activities = [
-    "Stå‑kat – rund ryggen frem og svaj den let tilbage.",
-    "Skulderrul bagud – store cirkler for at løsne spændinger.",
-    "Læg‑løft – op på tæerne og ned igen.",
-    "Ryst kroppen – slip spændinger i arme og ben."
-];
-
-const FEED_DISPLAY_LIMIT = 5;
-
-function getRandomActivity() {
-    return activities[Math.floor(Math.random() * activities.length)];
-}
-
-function showMicro(message) {
-    const m = document.getElementById("micro");
-    m.textContent = message || "Godt gået – fortsæt den gode vane!";
-    m.style.display = "block";
-    setTimeout(() => m.style.display = "none", 6000);
-}
-
-function sameDay(ts1, ts2) {
-    const d1 = new Date(ts1);
-    const d2 = new Date(ts2);
-    return d1.getFullYear() === d2.getFullYear() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getDate() === d2.getDate();
-}
-
-// ----------------------
-// RENDER
-// ----------------------
-function renderUserAndTeam() {
-    const team = Data.getTeamById(user.teamId);
-    const org = Data.getOrgs().find(o => o.id === user.orgId) || null;
-
-    document.getElementById("greeting").textContent = "Hej " + (user.name || "ukendt");
-    document.getElementById("teamLabel").textContent = "Team: " + (team ? team.name : "Ingen");
-    document.getElementById("teamName").textContent = team ? team.name : "Ingen";
-    document.getElementById("orgName").textContent = org ? org.name : "Ingen";
-
-    document.getElementById("nameInput").value = user.name === "ukendt" ? "" : user.name;
-    document.getElementById("orgInput").value = org ? org.name : "";
-}
-
 function renderTeamSelect() {
     const select = document.getElementById("teamSelect");
     const teams = Data.getTeams().filter(t => t.orgId === user.orgId);
@@ -240,80 +172,66 @@ function renderTeamSelect() {
         select.appendChild(opt);
     });
 
-    if (teams.length > 0) {
-        if (!teams.find(t => t.id === user.teamId)) {
-            user.teamId = teams[0].id;
-            Data.saveUser(user);
-        }
-        select.value = user.teamId;
-    }
+    select.value = user.teamId;
+}
+
+function sameDay(a, b) {
+    const d1 = new Date(a);
+    const d2 = new Date(b);
+    return d1.toDateString() === d2.toDateString();
 }
 
 function renderStats() {
-    const allEvents = Data.getEvents();
+    const events = Data.getEvents();
     const now = Date.now();
 
-    const userEvents = allEvents.filter(e => e.userId === user.id);
-    const userEventsToday = userEvents.filter(e => sameDay(e.createdAt, now));
+    const userEvents = events.filter(e => e.userId === user.id);
+    const userToday = userEvents.filter(e => sameDay(e.createdAt, now));
 
-    const teamEvents = allEvents.filter(e => e.teamId === user.teamId);
-    const teamEventsToday = teamEvents.filter(e => sameDay(e.createdAt, now));
+    const teamEvents = events.filter(e => e.teamId === user.teamId);
+    const teamToday = teamEvents.filter(e => sameDay(e.createdAt, now));
 
-    document.getElementById("todayCount").textContent = userEventsToday.length;
+    document.getElementById("todayCount").textContent = userToday.length;
     document.getElementById("totalCount").textContent = userEvents.length;
-    document.getElementById("teamToday").textContent = teamEventsToday.length;
+    document.getElementById("teamToday").textContent = teamToday.length;
     document.getElementById("teamTotal").textContent = teamEvents.length;
 }
 
 function renderFeed() {
-    const feedDiv = document.getElementById("feed");
-    feedDiv.innerHTML = "";
+    const feed = document.getElementById("feed");
+    feed.innerHTML = "";
 
-    const events = Data.getEventsByTeam(user.teamId);
-    const toShow = events.slice(0, FEED_DISPLAY_LIMIT);
+    const events = Data.getEvents().filter(e => e.teamId === user.teamId).slice(0, 5);
 
-    toShow.forEach(e => {
+    events.forEach(e => {
         const div = document.createElement("div");
-        const time = new Date(e.createdAt).toLocaleTimeString("da-DK", {hour:"2-digit",minute:"2-digit"});
-        div.textContent = `${e.activity || "Pause"} – ${time}`;
-        feedDiv.appendChild(div);
+        div.textContent = `${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}`;
+        feed.appendChild(div);
     });
-
-    if (events.length > FEED_DISPLAY_LIMIT) {
-        const more = document.createElement("div");
-        more.style.marginTop = "8px";
-        more.style.color = "#666";
-        more.textContent = `Viser ${FEED_DISPLAY_LIMIT} af ${events.length} pauser (nyeste øverst)`;
-        feedDiv.appendChild(more);
-    }
 }
 
-function renderAdminOverview() {
+function renderAdmin() {
     const orgList = document.getElementById("orgList");
     const teamList = document.getElementById("teamList");
     const userList = document.getElementById("userList");
-
-    const orgs = Data.getOrgs();
-    const teams = Data.getTeams();
-    const users = Data.getUsers();
 
     orgList.innerHTML = "";
     teamList.innerHTML = "";
     userList.innerHTML = "";
 
-    orgs.forEach(o => {
+    Data.getOrgs().forEach(o => {
         const li = document.createElement("li");
         li.textContent = `${o.id} – ${o.name}`;
         orgList.appendChild(li);
     });
 
-    teams.forEach(t => {
+    Data.getTeams().forEach(t => {
         const li = document.createElement("li");
         li.textContent = `${t.id} – ${t.name} (org: ${t.orgId})`;
         teamList.appendChild(li);
     });
 
-    users.forEach(u => {
+    Data.getUsers().forEach(u => {
         const li = document.createElement("li");
         li.textContent = `${u.id} – ${u.name} (team: ${u.teamId}, org: ${u.orgId})`;
         userList.appendChild(li);
@@ -321,55 +239,25 @@ function renderAdminOverview() {
 }
 
 function initUI() {
-    document.getElementById("reminderInput").value = reminderMinutes;
-    renderUserAndTeam();
+    document.getElementById("nameInput").value = user.name === "ukendt" ? "" : user.name;
+    document.getElementById("orgInput").value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
     renderTeamSelect();
     renderStats();
     renderFeed();
-    renderAdminOverview();
+    renderAdmin();
 }
 initUI();
 
 // ----------------------
 // HANDLERS
 // ----------------------
-document.getElementById("startCheckinBtn").onclick = () => {
-    document.getElementById("getActivityBtn").click();
-    window.scrollTo({ top: 260, behavior: "smooth" });
-};
-
-document.getElementById("getActivityBtn").onclick = () => {
-    const activity = getRandomActivity();
-    document.getElementById("activityText").textContent = activity;
-};
-
-document.getElementById("doneBtn").onclick = () => {
-    const activity = document.getElementById("activityText").textContent || getRandomActivity();
-
-    Data.addEvent({
-        id: crypto.randomUUID(),
-        orgId: user.orgId,
-        teamId: user.teamId,
-        userId: user.id,
-        type: "pause",
-        activity: activity,
-        createdAt: Date.now()
-    });
-
-    renderStats();
-    renderFeed();
-    renderAdminOverview();
-    showMicro("Godt gået – fortsæt den gode vane!");
-};
-
-document.getElementById("nameInput").onchange = (e) => {
+document.getElementById("nameInput").onchange = e => {
     user.name = e.target.value || "ukendt";
     Data.saveUser(user);
-    renderUserAndTeam();
-    renderAdminOverview();
+    renderAdmin();
 };
 
-document.getElementById("orgInput").onchange = (e) => {
+document.getElementById("orgInput").onchange = e => {
     const name = e.target.value.trim();
     if (!name) return;
 
@@ -378,46 +266,51 @@ document.getElementById("orgInput").onchange = (e) => {
         org = { id: "org_" + name.toLowerCase().replace(/\s+/g, "_"), name };
         Data.saveOrg(org);
     }
+
     user.orgId = org.id;
     Data.saveUser(user);
-    renderUserAndTeam();
     renderTeamSelect();
     renderStats();
     renderFeed();
-    renderAdminOverview();
+    renderAdmin();
 };
 
-document.getElementById("teamSelect").onchange = (e) => {
+document.getElementById("teamSelect").onchange = e => {
     user.teamId = e.target.value;
     Data.saveUser(user);
-    renderUserAndTeam();
     renderStats();
     renderFeed();
-    renderAdminOverview();
+    renderAdmin();
 };
 
-document.getElementById("reminderInput").onchange = (e) => {
-    reminderMinutes = Number(e.target.value) || 30;
-    localStorage.setItem("reminderMinutes", reminderMinutes);
+document.getElementById("getActivityBtn").onclick = () => {
+    document.getElementById("activityText").textContent = [
+        "Stå‑kat",
+        "Skulderrul",
+        "Læg‑løft",
+        "Ryst kroppen"
+    ][Math.floor(Math.random() * 4)];
 };
 
-function notify() {
-    const n = document.createElement("div");
-    n.textContent = "Tid til en kort pause?";
-    n.style.position = "fixed";
-    n.style.bottom = "10px";
-    n.style.right = "10px";
-    n.style.padding = "10px";
-    n.style.background = "#eee";
-    n.style.border = "1px solid #ddd";
-    document.body.appendChild(n);
-    setTimeout(() => n.remove(), 5000);
-}
+document.getElementById("doneBtn").onclick = () => {
+    const activity = document.getElementById("activityText").textContent;
 
-setInterval(() => notify(), reminderMinutes * 60 * 1000);
+    Data.addEvent({
+        id: crypto.randomUUID(),
+        orgId: user.orgId,
+        teamId: user.teamId,
+        userId: user.id,
+        activity,
+        createdAt: Date.now()
+    });
 
-window.addEventListener("online", () => console.log("Senere: synk til backend her"));
-window.addEventListener("offline", () => console.log("Offline – gemmer lokalt"));
+    document.getElementById("micro").style.display = "block";
+    setTimeout(() => document.getElementById("micro").style.display = "none", 3000);
+
+    renderStats();
+    renderFeed();
+    renderAdmin();
+};
 </script>
 
 </body>
