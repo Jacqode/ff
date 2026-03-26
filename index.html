@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Flow Focus</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -43,6 +44,9 @@
 <div>Pauser i dag: <span id="todayCount">0</span></div>
 <div>Pauser i alt: <span id="totalCount">0</span></div>
 
+<h3>Pauser over tid</h3>
+<canvas id="pauseChart" width="400" height="200"></canvas>
+
 <h2>Team stats</h2>
 <div>Team pauser i dag: <span id="teamToday">0</span></div>
 <div>Team pauser i alt: <span id="teamTotal">0</span></div>
@@ -70,9 +74,7 @@
 // DATA SERVICE
 // ----------------------
 const Data = {
-    getOrgs() {
-        return JSON.parse(localStorage.getItem("orgs") || "[]");
-    },
+    getOrgs() { return JSON.parse(localStorage.getItem("orgs") || "[]"); },
     saveOrg(org) {
         const orgs = this.getOrgs();
         const idx = orgs.findIndex(o => o.id === org.id);
@@ -80,9 +82,7 @@ const Data = {
         localStorage.setItem("orgs", JSON.stringify(orgs));
     },
 
-    getTeams() {
-        return JSON.parse(localStorage.getItem("teams") || "[]");
-    },
+    getTeams() { return JSON.parse(localStorage.getItem("teams") || "[]"); },
     saveTeam(team) {
         const teams = this.getTeams();
         const idx = teams.findIndex(t => t.id === team.id);
@@ -90,9 +90,7 @@ const Data = {
         localStorage.setItem("teams", JSON.stringify(teams));
     },
 
-    getUsers() {
-        return JSON.parse(localStorage.getItem("users") || "[]");
-    },
+    getUsers() { return JSON.parse(localStorage.getItem("users") || "[]"); },
     saveUser(user) {
         const users = this.getUsers();
         const idx = users.findIndex(u => u.id === user.id);
@@ -111,9 +109,7 @@ const Data = {
         events.unshift(event);
         localStorage.setItem("events", JSON.stringify(events));
     },
-    getEvents() {
-        return JSON.parse(localStorage.getItem("events") || "[]");
-    }
+    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); }
 };
 
 // ----------------------
@@ -151,8 +147,8 @@ if (!user) {
     user = {
         id: "user_" + Math.random().toString(36).slice(2),
         name: "ukendt",
-        orgId: orgId,
-        teamId: teamId
+        orgId,
+        teamId
     };
     Data.saveUser(user);
 }
@@ -176,61 +172,38 @@ function renderStats() {
     const teamEvents = events.filter(e => e.teamId === user.teamId);
     const teamToday = teamEvents.filter(e => sameDay(e.createdAt, now));
 
-    document.getElementById("todayCount").textContent = userToday.length;
-    document.getElementById("totalCount").textContent = userEvents.length;
-    document.getElementById("teamToday").textContent = teamToday.length;
-    document.getElementById("teamTotal").textContent = teamEvents.length;
+    todayCount.textContent = userToday.length;
+    totalCount.textContent = userEvents.length;
+    teamToday.textContent = teamToday.length;
+    teamTotal.textContent = teamEvents.length;
 }
 
 function renderFeed() {
-    const feed = document.getElementById("feed");
     feed.innerHTML = "";
-
-    const events = Data.getEvents().filter(e => e.teamId === user.teamId).slice(0, 5);
-
-    events.forEach(e => {
-        const div = document.createElement("div");
-        div.textContent = `${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}`;
-        feed.appendChild(div);
-    });
+    Data.getEvents()
+        .filter(e => e.teamId === user.teamId)
+        .slice(0, 5)
+        .forEach(e => {
+            const div = document.createElement("div");
+            div.textContent = `${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}`;
+            feed.appendChild(div);
+        });
 }
 
 function renderAdmin() {
-    const orgList = document.getElementById("orgList");
-    const teamList = document.getElementById("teamList");
-    const userList = document.getElementById("userList");
-
     orgList.innerHTML = "";
     teamList.innerHTML = "";
     userList.innerHTML = "";
 
-    Data.getOrgs().forEach(o => {
-        const li = document.createElement("li");
-        li.textContent = `${o.id} – ${o.name}`;
-        orgList.appendChild(li);
-    });
-
-    Data.getTeams().forEach(t => {
-        const li = document.createElement("li");
-        li.textContent = `${t.id} – ${t.name} (org: ${t.orgId})`;
-        teamList.appendChild(li);
-    });
-
-    Data.getUsers().forEach(u => {
-        const li = document.createElement("li");
-        li.textContent = `${u.id} – ${u.name} (team: ${u.teamId}, org: ${u.orgId})`;
-        userList.appendChild(li);
-    });
+    Data.getOrgs().forEach(o => orgList.innerHTML += `<li>${o.id} – ${o.name}</li>`);
+    Data.getTeams().forEach(t => teamList.innerHTML += `<li>${t.id} – ${t.name}</li>`);
+    Data.getUsers().forEach(u => userList.innerHTML += `<li>${u.id} – ${u.name}</li>`);
 }
 
 function initUI() {
-    document.getElementById("nameInput").value = user.name === "ukendt" ? "" : user.name;
-
-    const org = Data.getOrgs().find(o => o.id === user.orgId);
-    document.getElementById("orgInput").value = org ? org.name : "";
-
-    const team = Data.getTeams().find(t => t.id === user.teamId);
-    document.getElementById("teamInput").value = team ? team.name : "";
+    nameInput.value = user.name === "ukendt" ? "" : user.name;
+    orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
+    teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
 
     renderStats();
     renderFeed();
@@ -241,35 +214,28 @@ initUI();
 // ----------------------
 // HANDLERS
 // ----------------------
-document.getElementById("nameInput").onchange = e => {
+nameInput.onchange = e => {
     user.name = e.target.value || "ukendt";
     Data.saveUser(user);
     renderAdmin();
 };
 
-document.getElementById("getActivityBtn").onclick = () => {
-    document.getElementById("activityText").textContent = [
-        "Stå‑kat",
-        "Skulderrul",
-        "Læg‑løft",
-        "Ryst kroppen"
-    ][Math.floor(Math.random() * 4)];
+getActivityBtn.onclick = () => {
+    activityText.textContent = ["Stå‑kat","Skulderrul","Læg‑løft","Ryst kroppen"][Math.floor(Math.random()*4)];
 };
 
-document.getElementById("doneBtn").onclick = () => {
-    const activity = document.getElementById("activityText").textContent;
-
+doneBtn.onclick = () => {
     Data.addEvent({
         id: crypto.randomUUID(),
         orgId: user.orgId,
         teamId: user.teamId,
         userId: user.id,
-        activity,
+        activity: activityText.textContent,
         createdAt: Date.now()
     });
 
-    document.getElementById("micro").style.display = "block";
-    setTimeout(() => document.getElementById("micro").style.display = "none", 3000);
+    micro.style.display = "block";
+    setTimeout(() => micro.style.display = "none", 2000);
 
     renderStats();
     renderFeed();
@@ -277,6 +243,53 @@ document.getElementById("doneBtn").onclick = () => {
 };
 </script>
 
+<!-- GRAF (ISOLERET) -->
+<script>
+(function () {
+    function lastWeekdays(n) {
+        const days = [];
+        let offset = 0;
+        const today = new Date();
+
+        while (days.length < n) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - offset++);
+            if (d.getDay() === 0 || d.getDay() === 6) continue;
+            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+        }
+        return days.reverse();
+    }
+
+    window.addEventListener("load", () => {
+        if (!window.Data || !window.user) return;
+
+        const days = lastWeekdays(10);
+        const events = Data.getEvents().filter(e => e.userId === user.id);
+
+        const counts = days.map(day =>
+            events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
+        );
+
+        new Chart(pauseChart, {
+            type: "line",
+            data: {
+                labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+                datasets: [{
+                    data: counts,
+                    borderColor: "#007bff",
+                    backgroundColor: "rgba(0,123,255,0.15)",
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    });
+})();
+</script>
+
 </body>
 </html>
-
