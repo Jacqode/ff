@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <title>Flow Focus</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- LAYOUT FOR GRAF-DASHBOARD -->
+    <style>
+        /* Gør graferne mindre og ens */
+        canvas {
+            max-width: 280px;
+            max-height: 140px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Læg graferne ved siden af hinanden */
+        .charts-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* mobil-venligt */
+        }
+
+        .chart-block h3 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .chart-block {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Flow Focus</h1>
+
+<!-- USER INFO -->
+<div>
+    <label>Navn:
+        <input id="nameInput" placeholder="Dit navn">
+    </label>
+</div>
+
+<div>
+    <label>Organisation:
+        <input id="orgInput" readonly style="background:#eee;">
+    </label>
+</div>
+
+<div>
+    <label>Team:
+        <input id="teamInput" readonly style="background:#eee;">
+    </label>
+</div>
+
+<hr>
+
+<!-- ACTIVITY -->
+<h2>Aktivitet</h2>
+<button id="getActivityBtn">Få aktivitet</button>
+<div id="activityText">Ingen aktivitet endnu</div>
+<button id="doneBtn">Færdig</button>
+<div id="micro" style="display:none;">Godt gået!</div>
+
+<hr>
+
+<!-- STATS -->
+<h2>Dine stats</h2>
+<div>Pauser i dag: <span id="todayCount">0</span></div>
+<div>Pauser i alt: <span id="totalCount">0</span></div>
+
+<!-- GRAF-DASHBOARD -->
+<div class="charts-row">
+
+    <!-- NY GRAF -->
+    <div class="chart-block">
+        <h3>Pauser i alt – fordelt på tidspunkt (seneste 10 hverdage)</h3>
+        <canvas id="totalTimeChart"></canvas>
+    </div>
+
+    <div class="chart-block">
+        <h3>Pauser over tid</h3>
+        <canvas id="pauseChart"></canvas>
+    </div>
+
+    <div class="chart-block">
+        <h3>Pauser i dag – fordelt over dagen</h3>
+        <canvas id="timeChart"></canvas>
+    </div>
+
+</div>
+
+<h2>Team stats</h2>
+<div>Team pauser i dag: <span id="teamToday">0</span></div>
+<div>Team pauser i alt: <span id="teamTotal">0</span></div>
+
+<hr>
+
+<!-- FEED -->
+<h2>Team feed</h2>
+<div id="feed"></div>
+
+<hr>
+
+<!-- ADMIN OVERBLIK -->
+<h2>Organisationer</h2>
+<ul id="orgList"></ul>
+
+<h2>Teams</h2>
+<ul id="teamList"></ul>
+
+<h2>Brugere</h2>
+<ul id="userList"></ul>
+
+<script>
+// ----------------------
+// DATA SERVICE
+// ----------------------
+const Data = {
+    getOrgs() { return JSON.parse(localStorage.getItem("orgs") || "[]"); },
+    saveOrg(org) {
+        const orgs = this.getOrgs();
+        const idx = orgs.findIndex(o => o.id === org.id);
+        if (idx === -1) orgs.push(org); else orgs[idx] = org;
+        localStorage.setItem("orgs", JSON.stringify(orgs));
+    },
+
+    getTeams() { return JSON.parse(localStorage.getItem("teams") || "[]"); },
+    saveTeam(team) {
+        const teams = this.getTeams();
+        const idx = teams.findIndex(t => t.id === team.id);
+        if (idx === -1) teams.push(team); else teams[idx] = team;
+        localStorage.setItem("teams", JSON.stringify(teams));
+    },
+
+    getUsers() { return JSON.parse(localStorage.getItem("users") || "[]"); },
+    saveUser(user) {
+        const users = this.getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (idx === -1) users.push(user); else users[idx] = user;
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("currentUserId", user.id);
+    },
+    getCurrentUser() {
+        const id = localStorage.getItem("currentUserId");
+        if (!id) return null;
+        return this.getUsers().find(u => u.id === id) || null;
+    },
+
+    addEvent(event) {
+        const events = JSON.parse(localStorage.getItem("events") || "[]");
+        events.unshift(event);
+        localStorage.setItem("events", JSON.stringify(events));
+    },
+    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); }
+};
+
+// ----------------------
+// URL ONBOARDING
+// ----------------------
+function parseQuery() {
+    const params = {};
+    window.location.search.replace(/^\?/, "").split("&").forEach(p => {
+        if (!p) return;
+        const [k, v] = p.split("=");
+        params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+    });
+    return params;
+}
+
+let user = Data.getCurrentUser();
+
+if (!user) {
+    const q = parseQuery();
+    const orgId = q.org || "org_default";
+    const teamId = q.team || "team_default";
+
+    if (!Data.getOrgs().find(o => o.id === orgId))
+        Data.saveOrg({ id: orgId, name: q.orgName || "Ukendt organisation" });
+
+    if (!Data.getTeams().find(t => t.id === teamId))
+        Data.saveTeam({ id: teamId, orgId, name: q.teamName || "Standard team" });
+
+    user = { id: "user_" + Math.random().toString(36).slice(2), name: "ukendt", orgId, teamId };
+    Data.saveUser(user);
+}
+
+// ----------------------
+// RENDER
+// ----------------------
+function sameDay(a, b) {
+    return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+function renderStats() {
+    const events = Data.getEvents();
+    const now = Date.now();
+
+    todayCount.textContent = events.filter(e => e.userId === user.id && sameDay(e.createdAt, now)).length;
+    totalCount.textContent = events.filter(e => e.userId === user.id).length;
+    teamToday.textContent = events.filter(e => e.teamId === user.teamId && sameDay(e.createdAt, now)).length;
+    teamTotal.textContent = events.filter(e => e.teamId === user.teamId).length;
+}
+
+function renderFeed() {
+    feed.innerHTML = "";
+    Data.getEvents().filter(e => e.teamId === user.teamId).slice(0,5).forEach(e => {
+        feed.innerHTML += `<div>${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}</div>`;
+    });
+}
+
+function renderAdmin() {
+    orgList.innerHTML = Data.getOrgs().map(o => `<li>${o.name}</li>`).join("");
+    teamList.innerHTML = Data.getTeams().map(t => `<li>${t.name}</li>`).join("");
+    userList.innerHTML = Data.getUsers().map(u => `<li>${u.name}</li>`).join("");
+}
+
+function initUI() {
+    nameInput.value = user.name === "ukendt" ? "" : user.name;
+    orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
+    teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
+    renderStats(); renderFeed(); renderAdmin();
+}
+initUI();
+
+// ----------------------
+// HANDLERS
+// ----------------------
+nameInput.onchange = e => { user.name = e.target.value || "ukendt"; Data.saveUser(user); renderAdmin(); };
+
+getActivityBtn.onclick = () => {
+    activityText.textContent = ["Stå‑kat","Skulderrul","Læg‑løft","Ryst kroppen"][Math.floor(Math.random()*4)];
+};
+
+doneBtn.onclick = () => {
+    Data.addEvent({ id: crypto.randomUUID(), orgId: user.orgId, teamId: user.teamId, userId: user.id, activity: activityText.textContent, createdAt: Date.now() });
+    micro.style.display = "block";
+    setTimeout(() => micro.style.display = "none", 2000);
+    renderStats(); renderFeed(); renderAdmin();
+};
+</script>
+
+<!-- PAUSE-GRAF (uændret) -->
+<script>
+window.addEventListener("load", () => {
+    const canvas = document.getElementById("pauseChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const days = [];
+    let offset = 0;
+    while (days.length < 10) {
+        const d = new Date();
+        d.setDate(d.getDate() - offset++);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    }
+    days.reverse();
+
+    const events = Data.getEvents().filter(e => e.userId === user.id);
+    const counts = days.map(day =>
+        events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
+    );
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+            datasets: [{
+                data: counts,
+                borderColor:"#007bff",
+                backgroundColor:"rgba(0,123,255,0.15)",
+                fill:true,
+                tension:0.3
+            }]
+        },
+        options: {
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true}}
+        }
+    });
+});
+</script>
+
+<!-- TIDS-GRAF (i dag) -->
+<script>
+window.addEventListener("load", () => {
+    const canvas = document.getElementById("timeChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
+    const counts = Array(hours.length).fill(0);
+
+    const today = new Date().toDateString();
+
+    Data.getEvents()
+        .filter(e => e.userId === user.id && new Date(e.createdAt).toDateString() === today)
+        .forEach(e => {
+            const h = new Date(e.createdAt).getHours();
+            if (h >= 8 && h <= 18) counts[h - 8]++;
+        });
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: hours.map(h => `${h}:00`),
+            datasets: [{
+                data: counts,
+                backgroundColor: "rgba(40,167,69,0.5)"
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+});
+</script>
+
+<!-- NY: TOTAL TIDS-GRAF (seneste 10 hverdage) -->
+<script>
+window.addEventListener("load", () => {
+    const canvas = document.getElementById("totalTimeChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    // Timer 08–18
+    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
+    const counts = Array(hours.length).fill(0);
+
+    // Find de seneste 10 hverdage
+    const days = [];
+    let offset = 0;
+    while (days.length < 10) {
+        const d = new Date();
+        d.setDate(d.getDate() - offset++);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    }
+
+    const events = Data.getEvents().filter(e => {
+        const d = new Date(e.createdAt);
+        return days.some(day => d.toDateString() === day.toDateString());
+    });
+
+    // Tæl alle pauser i alle 10 dage pr. time
+    events.forEach(e => {
+        const h = new Date(e.createdAt).getHours();
+        if (h >= 8 && h <= 18) counts[h - 8]++;
+    });
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: hours.map(h => `${h}:00`),
+            datasets: [{
+                data: counts,
+                backgroundColor: "rgba(255,159,64,0.6)"
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+});
+</script>
+
+</body>
+</html>
