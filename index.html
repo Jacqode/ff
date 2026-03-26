@@ -3,16 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Flow Focus</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 20px; max-width: 900px; margin: auto; }
-        input[readonly] { background:#eee; border:1px solid #ccc; padding:6px; }
-        input, button { padding:6px 8px; margin:6px 0; }
-        h1,h2,h3 { margin: 12px 0 6px; }
-        hr { margin: 16px 0; }
-        #feed div { padding:6px 0; border-bottom:1px solid #f0f0f0; }
-        ul { padding-left: 18px; }
-    </style>
 </head>
 <body>
 
@@ -27,13 +17,13 @@
 
 <div>
     <label>Organisation:
-        <input id="orgInput" readonly>
+        <input id="orgInput" readonly style="background:#eee;">
     </label>
 </div>
 
 <div>
     <label>Team:
-        <input id="teamInput" readonly>
+        <input id="teamInput" readonly style="background:#eee;">
     </label>
 </div>
 
@@ -43,9 +33,8 @@
 <h2>Aktivitet</h2>
 <button id="getActivityBtn">Få aktivitet</button>
 <div id="activityText">Ingen aktivitet endnu</div>
-<br>
 <button id="doneBtn">Færdig</button>
-<div id="micro" style="display:none; margin-top:8px; color:green;">Godt gået!</div>
+<div id="micro" style="display:none;">Godt gået!</div>
 
 <hr>
 
@@ -54,12 +43,6 @@
 <div>Pauser i dag: <span id="todayCount">0</span></div>
 <div>Pauser i alt: <span id="totalCount">0</span></div>
 
-<h3>Pauser over tid</h3>
-<canvas id="userChart" width="400" height="200"></canvas>
-
-<hr>
-
-<!-- TEAM STATS -->
 <h2>Team stats</h2>
 <div>Team pauser i dag: <span id="teamToday">0</span></div>
 <div>Team pauser i alt: <span id="teamTotal">0</span></div>
@@ -84,10 +67,12 @@
 
 <script>
 // ----------------------
-// DATA SERVICE (localStorage)
+// DATA SERVICE
 // ----------------------
 const Data = {
-    getOrgs() { return JSON.parse(localStorage.getItem("orgs") || "[]"); },
+    getOrgs() {
+        return JSON.parse(localStorage.getItem("orgs") || "[]");
+    },
     saveOrg(org) {
         const orgs = this.getOrgs();
         const idx = orgs.findIndex(o => o.id === org.id);
@@ -95,7 +80,9 @@ const Data = {
         localStorage.setItem("orgs", JSON.stringify(orgs));
     },
 
-    getTeams() { return JSON.parse(localStorage.getItem("teams") || "[]"); },
+    getTeams() {
+        return JSON.parse(localStorage.getItem("teams") || "[]");
+    },
     saveTeam(team) {
         const teams = this.getTeams();
         const idx = teams.findIndex(t => t.id === team.id);
@@ -103,7 +90,9 @@ const Data = {
         localStorage.setItem("teams", JSON.stringify(teams));
     },
 
-    getUsers() { return JSON.parse(localStorage.getItem("users") || "[]"); },
+    getUsers() {
+        return JSON.parse(localStorage.getItem("users") || "[]");
+    },
     saveUser(user) {
         const users = this.getUsers();
         const idx = users.findIndex(u => u.id === user.id);
@@ -122,7 +111,9 @@ const Data = {
         events.unshift(event);
         localStorage.setItem("events", JSON.stringify(events));
     },
-    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); }
+    getEvents() {
+        return JSON.parse(localStorage.getItem("events") || "[]");
+    }
 };
 
 // ----------------------
@@ -167,101 +158,14 @@ if (!user) {
 }
 
 // ----------------------
-// HELPER FUNCTIONS (robust)
+// RENDER FUNKTIONER
 // ----------------------
 function sameDay(a, b) {
     const d1 = new Date(a);
     const d2 = new Date(b);
-    return d1.getFullYear() === d2.getFullYear()
-        && d1.getMonth() === d2.getMonth()
-        && d1.getDate() === d2.getDate();
+    return d1.toDateString() === d2.toDateString();
 }
 
-// Hent de sidste n hverdage (man-fre) uden risiko for uendelig løkke
-function getLastNDays(n) {
-    const days = [];
-    let offset = 0;
-    const today = new Date();
-
-    while (days.length < n) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - offset);
-        offset++;
-
-        const dayOfWeek = d.getDay(); // 0 = søndag, 6 = lørdag
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-        // push en ny Date-instans (kun år/måned/dato)
-        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-    }
-
-    return days.reverse();
-}
-
-function countPausesPerDay(userId, days) {
-    const events = Data.getEvents().filter(e => e.userId === userId);
-
-    return days.map(day =>
-        events.filter(e => sameDay(e.createdAt, day)).length
-    );
-}
-
-// ----------------------
-// RENDER CHART
-// ----------------------
-let userChart = null;
-
-function renderUserChart() {
-    const days = getLastNDays(10);
-    const counts = countPausesPerDay(user.id, days);
-
-    const labels = days.map(d =>
-        d.toLocaleDateString("da-DK", { weekday: "short", day: "numeric", month: "numeric" })
-    );
-
-    const ctx = document.getElementById("userChart").getContext("2d");
-
-    if (userChart) userChart.destroy();
-
-    userChart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Pauser pr. dag",
-                data: counts,
-                borderColor: "#007bff",
-                backgroundColor: "rgba(0,123,255,0.15)",
-                tension: 0.25,
-                fill: true,
-                pointRadius: 4,
-                pointBackgroundColor: "#007bff"
-            }]
-        },
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: { display: true, text: "Dato (man–fre)" },
-                    ticks: { maxRotation: 0, autoSkip: false }
-                },
-                y: {
-                    title: { display: true, text: "Pauser" },
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            },
-            plugins: {
-                legend: { display: false }
-            }
-        }
-    });
-}
-
-// ----------------------
-// RENDER UI
-// ----------------------
 function renderStats() {
     const events = Data.getEvents();
     const now = Date.now();
@@ -282,12 +186,11 @@ function renderFeed() {
     const feed = document.getElementById("feed");
     feed.innerHTML = "";
 
-    const events = Data.getEvents().filter(e => e.teamId === user.teamId).slice(0, 10);
+    const events = Data.getEvents().filter(e => e.teamId === user.teamId).slice(0, 5);
 
     events.forEach(e => {
         const div = document.createElement("div");
-        const time = new Date(e.createdAt).toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" });
-        div.textContent = `${e.activity} – ${time}`;
+        div.textContent = `${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}`;
         feed.appendChild(div);
     });
 }
@@ -332,7 +235,6 @@ function initUI() {
     renderStats();
     renderFeed();
     renderAdmin();
-    renderUserChart();
 }
 initUI();
 
@@ -350,16 +252,15 @@ document.getElementById("getActivityBtn").onclick = () => {
         "Stå‑kat",
         "Skulderrul",
         "Læg‑løft",
-        "Ryst kroppen",
-        "Stræk arme"
-    ][Math.floor(Math.random() * 5)];
+        "Ryst kroppen"
+    ][Math.floor(Math.random() * 4)];
 };
 
 document.getElementById("doneBtn").onclick = () => {
-    const activity = document.getElementById("activityText").textContent || "Pause";
+    const activity = document.getElementById("activityText").textContent;
 
     Data.addEvent({
-        id: crypto.randomUUID ? crypto.randomUUID() : ("id_" + Math.random().toString(36).slice(2)),
+        id: crypto.randomUUID(),
         orgId: user.orgId,
         teamId: user.teamId,
         userId: user.id,
@@ -368,26 +269,14 @@ document.getElementById("doneBtn").onclick = () => {
     });
 
     document.getElementById("micro").style.display = "block";
-    setTimeout(() => document.getElementById("micro").style.display = "none", 2000);
+    setTimeout(() => document.getElementById("micro").style.display = "none", 3000);
 
     renderStats();
     renderFeed();
     renderAdmin();
-    renderUserChart();
 };
-
-// ----------------------
-// Optional: helper to clear local test data (uncomment to use)
-// ----------------------
-// function clearTestData() {
-//     localStorage.removeItem('events');
-//     localStorage.removeItem('users');
-//     localStorage.removeItem('teams');
-//     localStorage.removeItem('orgs');
-//     localStorage.removeItem('currentUserId');
-//     location.reload();
-// }
 </script>
 
 </body>
 </html>
+
