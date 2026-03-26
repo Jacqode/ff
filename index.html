@@ -4,6 +4,36 @@
     <meta charset="UTF-8">
     <title>Flow Focus</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- LAYOUT FOR GRAF-DASHBOARD -->
+    <style>
+        /* Gør graferne mindre og ens */
+        canvas {
+            max-width: 280px;
+            max-height: 140px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Læg graferne ved siden af hinanden */
+        .charts-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* mobil-venligt */
+        }
+
+        .chart-block h3 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .chart-block {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
@@ -44,12 +74,20 @@
 <div>Pauser i dag: <span id="todayCount">0</span></div>
 <div>Pauser i alt: <span id="totalCount">0</span></div>
 
-<h3>Pauser over tid</h3>
-<canvas id="pauseChart" width="400" height="200"></canvas>
+<!-- GRAF-DASHBOARD -->
+<div class="charts-row">
 
-<!-- TILFØJET: TIDS-GRAF (kun dette) -->
-<h3>Pauser i dag – fordelt over dagen</h3>
-<canvas id="timeChart" width="400" height="200"></canvas>
+    <div class="chart-block">
+        <h3>Pauser over tid</h3>
+        <canvas id="pauseChart"></canvas>
+    </div>
+
+    <div class="chart-block">
+        <h3>Pauser i dag – fordelt over dagen</h3>
+        <canvas id="timeChart"></canvas>
+    </div>
+
+</div>
 
 <h2>Team stats</h2>
 <div>Team pauser i dag: <span id="teamToday">0</span></div>
@@ -201,7 +239,7 @@ doneBtn.onclick = () => {
 };
 </script>
 
-<!-- GRAF (ENESTE ÆNDRING) -->
+<!-- PAUSE-GRAF (uændret) -->
 <script>
 window.addEventListener("load", () => {
     const canvas = document.getElementById("pauseChart");
@@ -244,7 +282,7 @@ window.addEventListener("load", () => {
 });
 </script>
 
-<!-- TILFØJET: TIDS-GRAF (kun dette) -->
+<!-- TIDS-GRAF -->
 <script>
 window.addEventListener("load", () => {
     const canvas = document.getElementById("timeChart");
@@ -252,7 +290,6 @@ window.addEventListener("load", () => {
 
     const ctx = canvas.getContext("2d");
 
-    // Timer 08–18
     const hours = Array.from({ length: 11 }, (_, i) => i + 8);
     const counts = Array(hours.length).fill(0);
 
