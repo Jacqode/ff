@@ -5,11 +5,10 @@
     <title>Flow Focus</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- LAYOUT FOR GRAF-DASHBOARD -->
     <style>
         canvas {
-            max-width: 280px;
-            max-height: 140px;
+            max-width: 320px;
+            max-height: 160px;
             display: block;
             margin: 0 auto;
         }
@@ -30,6 +29,27 @@
 
         .chart-block {
             text-align: center;
+        }
+
+        .energy-inputs {
+            display:flex;
+            gap:8px;
+            align-items:center;
+            margin-top:8px;
+            flex-wrap:wrap;
+        }
+
+        .energy-button {
+            padding:6px 10px;
+            border-radius:4px;
+            border:1px solid #ccc;
+            background:#f8f9fa;
+            cursor:pointer;
+        }
+
+        .small-muted {
+            font-size:12px;
+            color:#666;
         }
     </style>
 </head>
@@ -72,6 +92,18 @@
 <div>Pauser i dag: <span id="todayCount">0</span></div>
 <div>Pauser i alt: <span id="totalCount">0</span></div>
 
+<!-- ENERGI MÅLING -->
+<div style="margin-top:10px;">
+    <div><strong>Hvordan føles din energi lige nu?</strong></div>
+    <div class="energy-inputs" id="dailyEnergyInputs">
+        <!-- knapper genereres af JS -->
+    </div>
+    <div class="small-muted">Gemmer som 0–10, bruges til at måle effekt over dagen</div>
+    <div style="margin-top:8px;">Seneste energi: <span id="lastEnergy">Ingen</span></div>
+</div>
+
+<hr>
+
 <!-- GRAF-DASHBOARD -->
 <div class="charts-row">
 
@@ -93,6 +125,14 @@
         <canvas id="pauseChart"></canvas>
     </div>
 
+</div>
+
+<!-- ENERGI GRAF -->
+<div style="max-width:980px;margin:0 auto 24px;">
+    <div style="text-align:center;">
+        <h3>Energi over tid (seneste målinger)</h3>
+        <canvas id="energyChart"></canvas>
+    </div>
 </div>
 
 <h2>Team stats</h2>
@@ -119,7 +159,7 @@
 
 <script>
 // ----------------------
-// DATA SERVICE
+// DATA SERVICE (udvidet med energyChecks)
 // ----------------------
 const Data = {
     getOrgs() { return JSON.parse(localStorage.getItem("orgs") || "[]"); },
@@ -157,7 +197,15 @@ const Data = {
         events.unshift(event);
         localStorage.setItem("events", JSON.stringify(events));
     },
-    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); }
+    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); },
+
+    // Energi checks: { value: number, createdAt: timestamp, userId }
+    getEnergyChecks() { return JSON.parse(localStorage.getItem("energyChecks") || "[]"); },
+    saveEnergyCheck(check) {
+        const arr = this.getEnergyChecks();
+        arr.unshift(check);
+        localStorage.setItem("energyChecks", JSON.stringify(arr));
+    }
 };
 
 // ----------------------
@@ -205,12 +253,21 @@ function renderStats() {
     totalCount.textContent = events.filter(e => e.userId === user.id).length;
     teamToday.textContent = events.filter(e => e.teamId === user.teamId && sameDay(e.createdAt, now)).length;
     teamTotal.textContent = events.filter(e => e.teamId === user.teamId).length;
+
+    const energyChecks = Data.getEnergyChecks().filter(c => c.userId === user.id);
+    if (energyChecks.length) {
+        lastEnergy.textContent = energyChecks[0].value;
+    } else {
+        lastEnergy.textContent = "Ingen";
+    }
 }
 
 function renderFeed() {
     feed.innerHTML = "";
     Data.getEvents().filter(e => e.teamId === user.teamId).slice(0,5).forEach(e => {
-        feed.innerHTML += `<div>${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}</div>`;
+        const energyInfo = (e.energyBefore !== undefined || e.energyAfter !== undefined)
+            ? ` <span class="small-muted">(${e.energyBefore ?? '-'}→${e.energyAfter ?? '-'})</span>` : "";
+        feed.innerHTML += `<div>${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}${energyInfo}</div>`;
     });
 }
 
@@ -225,6 +282,8 @@ function initUI() {
     orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
     teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
     renderStats(); renderFeed(); renderAdmin();
+    renderEnergyButtons();
+    renderEnergyChart();
 }
 initUI();
 
@@ -234,142 +293,205 @@ initUI();
 nameInput.onchange = e => { user.name = e.target.value || "ukendt"; Data.saveUser(user); renderAdmin(); };
 
 getActivityBtn.onclick = () => {
+    // Når brugeren beder om en aktivitet, spørg om energyBefore (valgfrit)
+    const before = prompt("Hvordan føles din energi lige nu? (0–10) — valgfrit, tryk Annuller for at springe over");
+    let energyBefore = undefined;
+    if (before !== null) {
+        const v = parseInt(before);
+        if (!isNaN(v) && v >= 0 && v <= 10) {
+            energyBefore = v;
+            Data.saveEnergyCheck({ value: v, createdAt: Date.now(), userId: user.id });
+            renderStats();
+            renderEnergyChart();
+        }
+    }
+
     activityText.textContent = ["Stå‑kat","Skulderrul","Læg‑løft","Ryst kroppen"][Math.floor(Math.random()*4)];
+    // Gem midlertidigt energyBefore på et globalt sted, så doneBtn kan bruge det
+    window._pendingEnergyBefore = energyBefore;
 };
 
 doneBtn.onclick = () => {
-    Data.addEvent({ id: crypto.randomUUID(), orgId: user.orgId, teamId: user.teamId, userId: user.id, activity: activityText.textContent, createdAt: Date.now() });
+    // Når brugeren afslutter en pause, spørg om energyAfter (parret måling)
+    const after = prompt("Hvordan føles din energi nu? (0–10) — valgfrit, tryk Annuller for at springe over");
+    let energyAfter = undefined;
+    if (after !== null) {
+        const v = parseInt(after);
+        if (!isNaN(v) && v >= 0 && v <= 10) {
+            energyAfter = v;
+            Data.saveEnergyCheck({ value: v, createdAt: Date.now(), userId: user.id });
+        }
+    }
+
+    const activity = activityText.textContent || "Pause";
+    const event = {
+        id: crypto.randomUUID(),
+        orgId: user.orgId,
+        teamId: user.teamId,
+        userId: user.id,
+        activity,
+        createdAt: Date.now(),
+        energyBefore: window._pendingEnergyBefore,
+        energyAfter
+    };
+    Data.addEvent(event);
+    // ryd pending
+    window._pendingEnergyBefore = undefined;
+
     micro.style.display = "block";
     setTimeout(() => micro.style.display = "none", 2000);
     renderStats(); renderFeed(); renderAdmin();
+    renderEnergyChart();
 };
-</script>
 
-<!-- PAUSER PR. DAG -->
-<script>
-window.addEventListener("load", () => {
-    const canvas = document.getElementById("pauseChart");
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-
-    const days = [];
-    let offset = 0;
-    while (days.length < 10) {
-        const d = new Date();
-        d.setDate(d.getDate() - offset++);
-        if (d.getDay() === 0 || d.getDay() === 6) continue;
-        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+// ----------------------
+// Daglig energi UI
+// ----------------------
+function renderEnergyButtons() {
+    const container = document.getElementById("dailyEnergyInputs");
+    container.innerHTML = "";
+    // Vi viser 11 knapper 0..10 (studier bruger 0-10 VAS)
+    for (let i = 0; i <= 10; i++) {
+        const btn = document.createElement("button");
+        btn.className = "energy-button";
+        btn.textContent = i;
+        btn.onclick = () => {
+            Data.saveEnergyCheck({ value: i, createdAt: Date.now(), userId: user.id });
+            renderStats();
+            renderEnergyChart();
+        };
+        container.appendChild(btn);
     }
-    days.reverse();
+}
 
-    const events = Data.getEvents().filter(e => e.userId === user.id);
-    const counts = days.map(day =>
-        events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
-    );
+// ----------------------
+// GRAFER
+// ----------------------
 
-    new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
-            datasets: [{
-                data: counts,
-                borderColor:"#007bff",
-                backgroundColor:"rgba(0,123,255,0.15)",
-                fill:true,
-                tension:0.3
-            }]
-        },
-        options: {
-            plugins:{legend:{display:false}},
-            scales:{y:{beginAtZero:true}}
+// PAUSER PR. DAG (line)
+window.addEventListener("load", () => {
+    const canvasPause = document.getElementById("pauseChart");
+    if (canvasPause) {
+        const ctx = canvasPause.getContext("2d");
+        const days = [];
+        let offset = 0;
+        while (days.length < 10) {
+            const d = new Date();
+            d.setDate(d.getDate() - offset++);
+            if (d.getDay() === 0 || d.getDay() === 6) continue;
+            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
         }
-    });
+        days.reverse();
+        const events = Data.getEvents().filter(e => e.userId === user.id);
+        const counts = days.map(day =>
+            events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
+        );
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+                datasets: [{
+                    data: counts,
+                    borderColor:"#007bff",
+                    backgroundColor:"rgba(0,123,255,0.15)",
+                    fill:true,
+                    tension:0.3
+                }]
+            },
+            options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+        });
+    }
 });
-</script>
 
-<!-- PAUSER I DAG -->
-<script>
+// PAUSER I DAG (bar)
 window.addEventListener("load", () => {
     const canvas = document.getElementById("timeChart");
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
-
     const hours = Array.from({ length: 11 }, (_, i) => i + 8);
     const counts = Array(hours.length).fill(0);
-
     const today = new Date().toDateString();
-
     Data.getEvents()
         .filter(e => e.userId === user.id && new Date(e.createdAt).toDateString() === today)
         .forEach(e => {
             const h = new Date(e.createdAt).getHours();
             if (h >= 8 && h <= 18) counts[h - 8]++;
         });
-
     new Chart(ctx, {
         type: "bar",
-        data: {
-            labels: hours.map(h => `${h}:00`),
-            datasets: [{
-                data: counts,
-                backgroundColor: "rgba(40,167,69,0.5)"
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
+        data: { labels: hours.map(h => `${h}:00`), datasets: [{ data: counts, backgroundColor: "rgba(40,167,69,0.5)" }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
 });
-</script>
 
-<!-- PAUSER SENESTE 10 DAGE -->
-<script>
+// PAUSER SENESTE 10 DAGE (bar)
 window.addEventListener("load", () => {
     const canvas = document.getElementById("totalTimeChart");
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-
-    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
-    const counts = Array(hours.length).fill(0);
-
-    const days = [];
-    let offset = 0;
-    while (days.length < 10) {
-        const d = new Date();
-        d.setDate(d.getDate() - offset++);
-        if (d.getDay() === 0 || d.getDay() === 6) continue;
-        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    if (canvas) {
+        const ctx = canvas.getContext("2d");
+        const hours = Array.from({ length: 11 }, (_, i) => i + 8);
+        const counts = Array(hours.length).fill(0);
+        const days = [];
+        let offset = 0;
+        while (days.length < 10) {
+            const d = new Date();
+            d.setDate(d.getDate() - offset++);
+            if (d.getDay() === 0 || d.getDay() === 6) continue;
+            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+        }
+        const events = Data.getEvents().filter(e => {
+            const d = new Date(e.createdAt);
+            return days.some(day => d.toDateString() === day.toDateString());
+        });
+        events.forEach(e => {
+            const h = new Date(e.createdAt).getHours();
+            if (h >= 8 && h <= 18) counts[h - 8]++;
+        });
+        new Chart(ctx, {
+            type: "bar",
+            data: { labels: hours.map(h => `${h}:00`), datasets: [{ data: counts, backgroundColor: "rgba(255,159,64,0.6)" }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
     }
+});
 
-    const events = Data.getEvents().filter(e => {
-        const d = new Date(e.createdAt);
-        return days.some(day => d.toDateString() === day.toDateString());
-    });
-
-    events.forEach(e => {
-        const h = new Date(e.createdAt).getHours();
-        if (h >= 8 && h <= 18) counts[h - 8]++;
-    });
-
-    new Chart(ctx, {
-        type: "bar",
+// ENERGI GRAF (linje) - viser de seneste 30 energimålinger
+function renderEnergyChart() {
+    const canvas = document.getElementById("energyChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const checks = Data.getEnergyChecks().filter(c => c.userId === user.id).slice(0, 30).reverse();
+    const labels = checks.map(c => new Date(c.createdAt).toLocaleString("da-DK", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }));
+    const values = checks.map(c => c.value);
+    if (window._energyChartInstance) {
+        window._energyChartInstance.destroy();
+    }
+    window._energyChartInstance = new Chart(ctx, {
+        type: "line",
         data: {
-            labels: hours.map(h => `${h}:00`),
+            labels,
             datasets: [{
-                data: counts,
-                backgroundColor: "rgba(255,159,64,0.6)"
+                label: "Energi (0–10)",
+                data: values,
+                borderColor: "#6f42c1",
+                backgroundColor: "rgba(111,66,193,0.12)",
+                fill: true,
+                tension: 0.25,
+                pointRadius: 4
             }]
         },
         options: {
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: {
+                y: { min: 0, max: 10, ticks: { stepSize: 1 } }
+            }
         }
     });
-});
+}
+
+// initial render af energi graf
+renderEnergyChart();
+
 </script>
 
 </body>
