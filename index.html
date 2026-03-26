@@ -47,6 +47,7 @@
 <h3>Pauser over tid</h3>
 <canvas id="pauseChart" width="400" height="200"></canvas>
 
+<!-- TILFØJET: TIDS-GRAF (kun dette) -->
 <h3>Pauser i dag – fordelt over dagen</h3>
 <canvas id="timeChart" width="400" height="200"></canvas>
 
@@ -200,7 +201,50 @@ doneBtn.onclick = () => {
 };
 </script>
 
-<!-- TIDS-GRAF -->
+<!-- GRAF (ENESTE ÆNDRING) -->
+<script>
+window.addEventListener("load", () => {
+    const canvas = document.getElementById("pauseChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const days = [];
+    let offset = 0;
+    while (days.length < 10) {
+        const d = new Date();
+        d.setDate(d.getDate() - offset++);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    }
+    days.reverse();
+
+    const events = Data.getEvents().filter(e => e.userId === user.id);
+    const counts = days.map(day =>
+        events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
+    );
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+            datasets: [{
+                data: counts,
+                borderColor:"#007bff",
+                backgroundColor:"rgba(0,123,255,0.15)",
+                fill:true,
+                tension:0.3
+            }]
+        },
+        options: {
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true}}
+        }
+    });
+});
+</script>
+
+<!-- TILFØJET: TIDS-GRAF (kun dette) -->
 <script>
 window.addEventListener("load", () => {
     const canvas = document.getElementById("timeChart");
@@ -208,6 +252,7 @@ window.addEventListener("load", () => {
 
     const ctx = canvas.getContext("2d");
 
+    // Timer 08–18
     const hours = Array.from({ length: 11 }, (_, i) => i + 8);
     const counts = Array(hours.length).fill(0);
 
