@@ -75,22 +75,22 @@
 <!-- GRAF-DASHBOARD -->
 <div class="charts-row">
 
-    <!-- VENSTRE: Pauser i dag -->
+    <!-- VENSTRE -->
     <div class="chart-block">
         <h3>Pauser i dag – fordelt over dagen</h3>
         <canvas id="timeChart"></canvas>
     </div>
 
-    <!-- MIDTEN: Pauser pr. dag -->
+    <!-- MIDTEN -->
+    <div class="chart-block">
+        <h3>Pauser seneste 10 dage – fordelt over dagen</h3>
+        <canvas id="totalTimeChart"></canvas>
+    </div>
+
+    <!-- HØJRE -->
     <div class="chart-block">
         <h3>Pauser pr. dag</h3>
         <canvas id="pauseChart"></canvas>
-    </div>
-
-    <!-- HØJRE: Pauser i alt fordelt på tidspunkt -->
-    <div class="chart-block">
-        <h3>Pauser i alt – fordelt på tidspunkt (seneste 10 hverdage)</h3>
-        <canvas id="totalTimeChart"></canvas>
     </div>
 
 </div>
@@ -325,7 +325,7 @@ window.addEventListener("load", () => {
 });
 </script>
 
-<!-- PAUSER I ALT (10 HVERDAGE) -->
+<!-- PAUSER SENESTE 10 DAGE -->
 <script>
 window.addEventListener("load", () => {
     const canvas = document.getElementById("totalTimeChart");
@@ -374,4 +374,3 @@ window.addEventListener("load", () => {
 
 </body>
 </html>
-       
