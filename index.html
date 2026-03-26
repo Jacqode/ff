@@ -23,7 +23,7 @@
 
 <div>
     <label>Team:
-        <select id="teamSelect"></select>
+        <input id="teamInput" readonly style="background:#eee;">
     </label>
 </div>
 
@@ -160,21 +160,6 @@ if (!user) {
 // ----------------------
 // RENDER FUNKTIONER
 // ----------------------
-function renderTeamSelect() {
-    const select = document.getElementById("teamSelect");
-    const teams = Data.getTeams().filter(t => t.orgId === user.orgId);
-
-    select.innerHTML = "";
-    teams.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.textContent = t.name;
-        select.appendChild(opt);
-    });
-
-    select.value = user.teamId;
-}
-
 function sameDay(a, b) {
     const d1 = new Date(a);
     const d2 = new Date(b);
@@ -244,7 +229,9 @@ function initUI() {
     const org = Data.getOrgs().find(o => o.id === user.orgId);
     document.getElementById("orgInput").value = org ? org.name : "";
 
-    renderTeamSelect();
+    const team = Data.getTeams().find(t => t.id === user.teamId);
+    document.getElementById("teamInput").value = team ? team.name : "";
+
     renderStats();
     renderFeed();
     renderAdmin();
@@ -257,14 +244,6 @@ initUI();
 document.getElementById("nameInput").onchange = e => {
     user.name = e.target.value || "ukendt";
     Data.saveUser(user);
-    renderAdmin();
-};
-
-document.getElementById("teamSelect").onchange = e => {
-    user.teamId = e.target.value;
-    Data.saveUser(user);
-    renderStats();
-    renderFeed();
     renderAdmin();
 };
 
@@ -300,3 +279,4 @@ document.getElementById("doneBtn").onclick = () => {
 
 </body>
 </html>
+
