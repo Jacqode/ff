@@ -6,86 +6,37 @@
 </head>
 <body>
 
-<!-- Header (fast øverst) -->
-<div id="header" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    z-index: 20;
-">
+<div id="header" style="position:fixed;top:0;left:0;right:0;background:white;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;z-index:20;">
     <div id="greeting">Hej ukendt</div>
     <div id="teamLabel">Team: Ingen</div>
 </div>
 
-<!-- HERO SEKTION -->
-<div id="hero" style="
-    margin-top: 60px;
-    padding: 32px 20px;
-    text-align: center;
-    background: #f7f7f7;
-    border-bottom: 1px solid #eee;
-">
-    <h1 style="margin: 0 0 10px 0; font-size: 1.6rem; font-weight: 700;">
-        FLOW FOCUS
-    </h1>
-
-    <h2 style="margin: 0 0 16px 0; font-size: 1.1rem; font-weight: 500;">
-        Aktive mikropauser øger din energi
-    </h2>
-
-    <p style="margin: 0 0 20px 0; font-size: 0.95rem; line-height: 1.4;">
+<div id="hero" style="margin-top:60px;padding:32px 20px;text-align:center;background:#f7f7f7;border-bottom:1px solid #eee;">
+    <h1 style="margin:0 0 10px 0;font-size:1.6rem;font-weight:700;">FLOW FOCUS</h1>
+    <h2 style="margin:0 0 16px 0;font-size:1.1rem;font-weight:500;">Aktive mikropauser øger din energi</h2>
+    <p style="margin:0 0 20px 0;font-size:0.95rem;line-height:1.4;">
         Tag en 20–60 sekunders bevægelsespause og mærk effekten.<br>
         Track din energi på få sekunder og se dine mønstre.
     </p>
-
-    <button id="startCheckinBtn" style="
-        padding: 12px 20px;
-        font-size: 1rem;
-        border: none;
-        background: #007bff;
-        color: white;
-        border-radius: 6px;
-        cursor: pointer;
-    ">
+    <button id="startCheckinBtn" style="padding:12px 20px;font-size:1rem;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">
         Start daglig check‑in
     </button>
 </div>
 
-<!-- Aktivitetskort (fast under hero) -->
-<div id="activityBox" style="
-    position: fixed;
-    top: 260px;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    z-index: 19;
-">
+<div id="activityBox" style="position:fixed;top:260px;left:0;right:0;background:white;padding:12px;border-bottom:1px solid #eee;z-index:19;">
     <div style="margin-bottom:8px;">
         <button id="getActivityBtn">Få aktivitet</button>
     </div>
-
     <div>
-        <h1 id="activityText" style="margin:6px 0 10px 0; font-size:1.1rem;">Få aktivitet</h1>
+        <h1 id="activityText" style="margin:6px 0 10px 0;font-size:1.1rem;">Få aktivitet</h1>
     </div>
-
     <div style="margin-bottom:8px;">
         <button id="doneBtn">Færdig</button>
     </div>
-
-    <div id="micro" style="display:none; color:#0a0; font-weight:600;">Godt gået – fortsæt den gode vane!</div>
+    <div id="micro" style="display:none;color:#0a0;font-weight:600;">Godt gået – fortsæt den gode vane!</div>
 </div>
 
-<!-- Hovedindhold -->
-<div id="main" style="margin-top: 380px; padding: 12px;">
+<div id="main" style="margin-top:380px;padding:12px;">
 
     <h3>Dit teams seneste aktiviter:</h3>
     <div id="feed"></div>
@@ -107,25 +58,30 @@
     <h3>Indstillinger</h3>
     <label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
     <label>Organisation: <input id="orgInput" placeholder="Organisation"></label><br><br>
-    <label>Teamnavn: <input id="teamInput" placeholder="Teamnavn"></label><br><br>
+    <label>Team: 
+        <select id="teamSelect"></select>
+    </label><br><br>
     <label>Minutter mellem påmindelser:
         <input id="reminderInput" type="number" min="5" max="180" value="30">
     </label>
+
+    <h3>Overblik (organisationer, teams, brugere)</h3>
+    <h4>Organisationer</h4>
+    <ul id="orgList"></ul>
+
+    <h4>Teams</h4>
+    <ul id="teamList"></ul>
+
+    <h4>Brugere</h4>
+    <ul id="userList"></ul>
 
 </div>
 
 <script>
 // ----------------------
-// DATA SERVICE (localStorage, backend-klar)
+// DATA SERVICE
 // ----------------------
 const Data = {
-    getUser() {
-        return JSON.parse(localStorage.getItem("user") || "null");
-    },
-    saveUser(user) {
-        localStorage.setItem("user", JSON.stringify(user));
-    },
-
     getOrgs() {
         return JSON.parse(localStorage.getItem("orgs") || "[]");
     },
@@ -149,6 +105,22 @@ const Data = {
         return this.getTeams().find(t => t.id === id) || null;
     },
 
+    getUsers() {
+        return JSON.parse(localStorage.getItem("users") || "[]");
+    },
+    saveUser(user) {
+        const users = this.getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (idx === -1) users.push(user); else users[idx] = user;
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("currentUserId", user.id);
+    },
+    getCurrentUser() {
+        const id = localStorage.getItem("currentUserId");
+        if (!id) return null;
+        return this.getUsers().find(u => u.id === id) || null;
+    },
+
     addEvent(event) {
         const events = JSON.parse(localStorage.getItem("events") || "[]");
         events.unshift(event);
@@ -162,48 +134,65 @@ const Data = {
     },
     getEventsByTeam(teamId) {
         return this.getEvents().filter(e => e.teamId === teamId);
-    },
-    getEventsByOrg(orgId) {
-        return this.getEvents().filter(e => e.orgId === orgId);
     }
 };
 
 // ----------------------
-// AKTIVITETER
+// INIT USER / ORG / TEAM (med URL-onboarding)
 // ----------------------
-const activities = [
-    "Stå‑kat – rund ryggen frem og svaj den let tilbage, skift langsomt mellem de to. 🐈",
-    "Skulderrul bagud – store cirkler for at løsne spændinger. 🌀",
-    "Læg‑løft – op på tæerne og ned igen. ⬆️",
-    "Ryst kroppen – slip spændinger i arme og ben. 💃"
-];
+function parseQuery() {
+    const params = {};
+    window.location.search.replace(/^\?/, "").split("&").forEach(p => {
+        if (!p) return;
+        const [k, v] = p.split("=");
+        params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+    });
+    return params;
+}
 
-const FEED_DISPLAY_LIMIT = 5;
-
-// ----------------------
-// STATE (afledt af Data)
-// ----------------------
 let reminderMinutes = Number(localStorage.getItem("reminderMinutes") || 30);
-let user = Data.getUser();
+let user = Data.getCurrentUser();
 
-// initér default user/org/team hvis ikke findes
 if (!user) {
-    const defaultOrg = { id: "org_default", name: "Min organisation" };
-    const defaultTeam = { id: "team_default", orgId: defaultOrg.id, name: "Standard team" };
-    Data.saveOrg(defaultOrg);
-    Data.saveTeam(defaultTeam);
+    const q = parseQuery();
+    let orgId = q.org || "org_default";
+    let teamId = q.team || "team_default";
+
+    let orgs = Data.getOrgs();
+    let org = orgs.find(o => o.id === orgId);
+    if (!org) {
+        org = { id: orgId, name: q.orgName || "Min organisation" };
+        Data.saveOrg(org);
+    }
+
+    let teams = Data.getTeams();
+    let team = teams.find(t => t.id === teamId && t.orgId === org.id);
+    if (!team) {
+        team = { id: teamId, orgId: org.id, name: q.teamName || "Standard team" };
+        Data.saveTeam(team);
+    }
+
     user = {
-        id: "user_device",
+        id: "user_" + Math.random().toString(36).slice(2),
         name: "ukendt",
-        orgId: defaultOrg.id,
-        teamId: defaultTeam.id
+        orgId: org.id,
+        teamId: team.id
     };
     Data.saveUser(user);
 }
 
 // ----------------------
-// HJÆLPEFUNKTIONER
+// AKTIVITETER
 // ----------------------
+const activities = [
+    "Stå‑kat – rund ryggen frem og svaj den let tilbage.",
+    "Skulderrul bagud – store cirkler for at løsne spændinger.",
+    "Læg‑løft – op på tæerne og ned igen.",
+    "Ryst kroppen – slip spændinger i arme og ben."
+];
+
+const FEED_DISPLAY_LIMIT = 5;
+
 function getRandomActivity() {
     return activities[Math.floor(Math.random() * activities.length)];
 }
@@ -224,12 +213,11 @@ function sameDay(ts1, ts2) {
 }
 
 // ----------------------
-// RENDER FUNKTIONER
+// RENDER
 // ----------------------
 function renderUserAndTeam() {
     const team = Data.getTeamById(user.teamId);
-    const orgs = Data.getOrgs();
-    const org = orgs.find(o => o.id === user.orgId) || null;
+    const org = Data.getOrgs().find(o => o.id === user.orgId) || null;
 
     document.getElementById("greeting").textContent = "Hej " + (user.name || "ukendt");
     document.getElementById("teamLabel").textContent = "Team: " + (team ? team.name : "Ingen");
@@ -237,8 +225,28 @@ function renderUserAndTeam() {
     document.getElementById("orgName").textContent = org ? org.name : "Ingen";
 
     document.getElementById("nameInput").value = user.name === "ukendt" ? "" : user.name;
-    document.getElementById("teamInput").value = team ? team.name : "";
     document.getElementById("orgInput").value = org ? org.name : "";
+}
+
+function renderTeamSelect() {
+    const select = document.getElementById("teamSelect");
+    const teams = Data.getTeams().filter(t => t.orgId === user.orgId);
+
+    select.innerHTML = "";
+    teams.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.name;
+        select.appendChild(opt);
+    });
+
+    if (teams.length > 0) {
+        if (!teams.find(t => t.id === user.teamId)) {
+            user.teamId = teams[0].id;
+            Data.saveUser(user);
+        }
+        select.value = user.teamId;
+    }
 }
 
 function renderStats() {
@@ -266,8 +274,8 @@ function renderFeed() {
 
     toShow.forEach(e => {
         const div = document.createElement("div");
-        const time = new Date(e.createdAt).toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
-        div.textContent = `${user.name || "Ukendt"}: pause ${time}`;
+        const time = new Date(e.createdAt).toLocaleTimeString("da-DK", {hour:"2-digit",minute:"2-digit"});
+        div.textContent = `${e.activity || "Pause"} – ${time}`;
         feedDiv.appendChild(div);
     });
 
@@ -280,33 +288,61 @@ function renderFeed() {
     }
 }
 
+function renderAdminOverview() {
+    const orgList = document.getElementById("orgList");
+    const teamList = document.getElementById("teamList");
+    const userList = document.getElementById("userList");
+
+    const orgs = Data.getOrgs();
+    const teams = Data.getTeams();
+    const users = Data.getUsers();
+
+    orgList.innerHTML = "";
+    teamList.innerHTML = "";
+    userList.innerHTML = "";
+
+    orgs.forEach(o => {
+        const li = document.createElement("li");
+        li.textContent = `${o.id} – ${o.name}`;
+        orgList.appendChild(li);
+    });
+
+    teams.forEach(t => {
+        const li = document.createElement("li");
+        li.textContent = `${t.id} – ${t.name} (org: ${t.orgId})`;
+        teamList.appendChild(li);
+    });
+
+    users.forEach(u => {
+        const li = document.createElement("li");
+        li.textContent = `${u.id} – ${u.name} (team: ${u.teamId}, org: ${u.orgId})`;
+        userList.appendChild(li);
+    });
+}
+
 function initUI() {
     document.getElementById("reminderInput").value = reminderMinutes;
     renderUserAndTeam();
+    renderTeamSelect();
     renderStats();
     renderFeed();
+    renderAdminOverview();
 }
 initUI();
 
 // ----------------------
-// HERO-KNAP
+// HANDLERS
 // ----------------------
 document.getElementById("startCheckinBtn").onclick = () => {
     document.getElementById("getActivityBtn").click();
     window.scrollTo({ top: 260, behavior: "smooth" });
 };
 
-// ----------------------
-// Knap: Få aktivitet
-// ----------------------
 document.getElementById("getActivityBtn").onclick = () => {
     const activity = getRandomActivity();
     document.getElementById("activityText").textContent = activity;
 };
 
-// ----------------------
-// Knap: Færdig (registrerer event)
-// ----------------------
 document.getElementById("doneBtn").onclick = () => {
     const activity = document.getElementById("activityText").textContent || getRandomActivity();
 
@@ -322,27 +358,22 @@ document.getElementById("doneBtn").onclick = () => {
 
     renderStats();
     renderFeed();
+    renderAdminOverview();
     showMicro("Godt gået – fortsæt den gode vane!");
 };
 
-// ----------------------
-// NAVN
-// ----------------------
 document.getElementById("nameInput").onchange = (e) => {
     user.name = e.target.value || "ukendt";
     Data.saveUser(user);
     renderUserAndTeam();
+    renderAdminOverview();
 };
 
-// ----------------------
-// ORGANISATION
-// ----------------------
 document.getElementById("orgInput").onchange = (e) => {
     const name = e.target.value.trim();
     if (!name) return;
 
-    let orgs = Data.getOrgs();
-    let org = orgs.find(o => o.name === name);
+    let org = Data.getOrgs().find(o => o.name === name);
     if (!org) {
         org = { id: "org_" + name.toLowerCase().replace(/\s+/g, "_"), name };
         Data.saveOrg(org);
@@ -350,35 +381,21 @@ document.getElementById("orgInput").onchange = (e) => {
     user.orgId = org.id;
     Data.saveUser(user);
     renderUserAndTeam();
+    renderTeamSelect();
+    renderStats();
+    renderFeed();
+    renderAdminOverview();
 };
 
-// ----------------------
-// TEAM
-// ----------------------
-document.getElementById("teamInput").onchange = (e) => {
-    const name = e.target.value.trim();
-    if (!name) return;
-
-    let teams = Data.getTeams();
-    let team = teams.find(t => t.name === name && t.orgId === user.orgId);
-    if (!team) {
-        team = {
-            id: "team_" + name.toLowerCase().replace(/\s+/g, "_"),
-            orgId: user.orgId,
-            name
-        };
-        Data.saveTeam(team);
-    }
-    user.teamId = team.id;
+document.getElementById("teamSelect").onchange = (e) => {
+    user.teamId = e.target.value;
     Data.saveUser(user);
     renderUserAndTeam();
     renderStats();
     renderFeed();
+    renderAdminOverview();
 };
 
-// ----------------------
-// PÅMINDELSER
-// ----------------------
 document.getElementById("reminderInput").onchange = (e) => {
     reminderMinutes = Number(e.target.value) || 30;
     localStorage.setItem("reminderMinutes", reminderMinutes);
@@ -399,12 +416,8 @@ function notify() {
 
 setInterval(() => notify(), reminderMinutes * 60 * 1000);
 
-// ----------------------
-// OFFLINE EVENTS (placeholder til backend senere)
-// ----------------------
 window.addEventListener("online", () => console.log("Senere: synk til backend her"));
 window.addEventListener("offline", () => console.log("Offline – gemmer lokalt"));
-
 </script>
 
 </body>
