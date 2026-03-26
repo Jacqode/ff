@@ -24,10 +24,44 @@
     <div id="teamLabel">Team: Ingen</div>
 </div>
 
-<!-- Aktivitetskort (fast under header) -->
+<!-- HERO SEKTION -->
+<div id="hero" style="
+    margin-top: 60px;
+    padding: 32px 20px;
+    text-align: center;
+    background: #f7f7f7;
+    border-bottom: 1px solid #eee;
+">
+    <h1 style="margin: 0 0 10px 0; font-size: 1.6rem; font-weight: 700;">
+        FLOW FOCUS
+    </h1>
+
+    <h2 style="margin: 0 0 16px 0; font-size: 1.1rem; font-weight: 500;">
+        Aktive mikropauser øger din energi
+    </h2>
+
+    <p style="margin: 0 0 20px 0; font-size: 0.95rem; line-height: 1.4;">
+        Tag en 20–60 sekunders bevægelsespause og mærk effekten.<br>
+        Track din energi på få sekunder og se dine mønstre.
+    </p>
+
+    <button id="startCheckinBtn" style="
+        padding: 12px 20px;
+        font-size: 1rem;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+    ">
+        Start daglig check‑in
+    </button>
+</div>
+
+<!-- Aktivitetskort (fast under hero) -->
 <div id="activityBox" style="
     position: fixed;
-    top: 56px; /* højde af header + lidt luft */
+    top: 260px; /* HERO + header */
     left: 0;
     right: 0;
     background: white;
@@ -35,40 +69,33 @@
     border-bottom: 1px solid #eee;
     z-index: 19;
 ">
-    <!-- Knap: Få aktivitet -->
     <div style="margin-bottom:8px;">
         <button id="getActivityBtn">Få aktivitet</button>
     </div>
 
-    <!-- Stor tekst: Aktivitetstitel -->
     <div>
         <h1 id="activityText" style="margin:6px 0 10px 0; font-size:1.1rem;">Få aktivitet</h1>
     </div>
 
-    <!-- Knap: Færdig (lige under aktiviteten) -->
     <div style="margin-bottom:8px;">
         <button id="doneBtn">Færdig</button>
     </div>
 
-    <!-- Microfeedback (lige under færdig knappen) -->
     <div id="micro" style="display:none; color:#0a0; font-weight:600;">Godt gået – fortsæt den gode vane!</div>
 </div>
 
-<!-- Hovedindhold: flyttet ned så det ikke ligger under de faste elementer -->
-<div id="main" style="margin-top: 170px; padding: 12px;">
+<!-- Hovedindhold -->
+<div id="main" style="margin-top: 380px; padding: 12px;">
 
-    <!-- Feed (omdøbt) -->
     <h3>Dit teams seneste aktiviter:</h3>
     <div id="feed"></div>
 
-    <!-- Stats -->
     <h3>Stats</h3>
     <div id="stats">
         <div>Pauser i dag: <span id="todayCount">0</span></div>
         <div>Pauser i alt: <span id="totalCount">0</span></div>
     </div>
 
-    <!-- Team Stats (vises hvis team valgt) -->
     <h3>Team</h3>
     <div id="teamBox">
         <div>Teamnavn: <span id="teamName">Ingen</span></div>
@@ -76,7 +103,6 @@
         <div>Team‑pauser i alt: <span id="teamTotal">0</span></div>
     </div>
 
-    <!-- Indstillinger -->
     <h3>Indstillinger</h3>
     <label>Navn: <input id="nameInput" placeholder="Skriv navn"></label><br><br>
     <label>Teamnavn: <input id="teamInput" placeholder="Teamnavn"></label><br><br>
@@ -97,7 +123,7 @@ const activities = [
     "Ryst kroppen – slip spændinger i arme og ben. 💃"
 ];
 
-const FEED_DISPLAY_LIMIT = 5; // vis kun de seneste 5 i feedet
+const FEED_DISPLAY_LIMIT = 5;
 
 let state = {
     name: localStorage.getItem("name") || "ukendt",
@@ -118,7 +144,6 @@ function initUI() {
     document.getElementById("greeting").textContent = "Hej " + state.name;
     document.getElementById("todayCount").textContent = state.todayCount;
     document.getElementById("totalCount").textContent = state.totalCount;
-    document.getElementById("lastPulse").textContent = state.lastPulse;
     document.getElementById("teamName").textContent = state.team || "Ingen";
     document.getElementById("teamToday").textContent = state.teamToday;
     document.getElementById("teamTotal").textContent = state.teamTotal;
@@ -139,19 +164,12 @@ function showMicro(message) {
     const m = document.getElementById("micro");
     m.textContent = message || "Godt gået – fortsæt den gode vane!";
     m.style.display = "block";
-    // vis i 6 sekunder
     setTimeout(() => m.style.display = "none", 6000);
 }
 
-/**
- * Render feed: vis kun de seneste FEED_DISPLAY_LIMIT entries.
- * state.feed er stadig fuld historik; vi begrænser kun visningen.
- */
 function renderFeed() {
     const feedDiv = document.getElementById("feed");
     feedDiv.innerHTML = "";
-
-    // Tag de første FEED_DISPLAY_LIMIT elementer fra state.feed
     const toShow = state.feed.slice(0, FEED_DISPLAY_LIMIT);
 
     toShow.forEach(item => {
@@ -160,7 +178,6 @@ function renderFeed() {
         feedDiv.appendChild(div);
     });
 
-    // Hvis der er flere end limit, vis en lille note
     if (state.feed.length > FEED_DISPLAY_LIMIT) {
         const more = document.createElement("div");
         more.style.marginTop = "8px";
@@ -176,31 +193,38 @@ function saveState() {
     localStorage.setItem("totalCount", state.totalCount);
     localStorage.setItem("reminderMinutes", state.reminderMinutes);
     localStorage.setItem("feed", JSON.stringify(state.feed));
-    localStorage.setItem("lastPulse", state.lastPulse);
     localStorage.setItem("team", state.team);
     localStorage.setItem("teamToday", state.teamToday);
     localStorage.setItem("teamTotal", state.teamTotal);
 }
 
 // ----------------------
-// Knapper: Få aktivitet (kun viser aktivitet)
+// HERO-KNAP → scroll + start aktivitet
+// ----------------------
+document.getElementById("startCheckinBtn").onclick = () => {
+    document.getElementById("getActivityBtn").click();
+    window.scrollTo({ top: 260, behavior: "smooth" });
+};
+
+// ----------------------
+// Få aktivitet
+// ----------------------
 document.getElementById("getActivityBtn").onclick = () => {
     const activity = getRandomActivity();
     document.getElementById("activityText").textContent = activity;
 };
 
 // ----------------------
-// Knap: Færdig (registrerer pause)
+// Færdig
+// ----------------------
 document.getElementById("doneBtn").onclick = () => {
     const activity = document.getElementById("activityText").textContent || getRandomActivity();
 
-    // registrer pause
     state.todayCount++;
     state.totalCount++;
     document.getElementById("todayCount").textContent = state.todayCount;
     document.getElementById("totalCount").textContent = state.totalCount;
 
-    // team stats (hvis team sat)
     if (state.team) {
         state.teamToday++;
         state.teamTotal++;
@@ -208,28 +232,18 @@ document.getElementById("doneBtn").onclick = () => {
         document.getElementById("teamTotal").textContent = state.teamTotal;
     }
 
-    // feed: nyeste øverst
     const time = new Date().toLocaleTimeString("da-DK", {hour: "2-digit", minute: "2-digit"});
     const entry = `${state.name}: ${activity} ${time}`;
     state.feed.unshift(entry);
 
-    // valgfrit: begræns intern historik til fx 200 entries for at undgå uendelig vækst
-    const MAX_HISTORY = 200;
-    if (state.feed.length > MAX_HISTORY) {
-        state.feed = state.feed.slice(0, MAX_HISTORY);
+    if (state.feed.length > 200) {
+        state.feed = state.feed.slice(0, 200);
     }
 
     renderFeed();
-
-    // microfeedback (6s)
-    showMicro("Godt gået – fortsæt den gode vane!");
-
+    showMicro();
     saveState();
 };
-
-// ----------------------
-// TRIVSELSPULS (placeholder knapper kan tilføjes senere)
-// ----------------------
 
 // ----------------------
 // NAVN
@@ -257,7 +271,6 @@ document.getElementById("reminderInput").onchange = (e) => {
     saveState();
 };
 
-// Diskret notifikation
 function notify() {
     const n = document.createElement("div");
     n.textContent = "Tid til en kort pause?";
@@ -273,12 +286,6 @@ function notify() {
 
 setInterval(() => notify(), state.reminderMinutes * 60 * 1000);
 
-// ----------------------
-// OFFLINE ROBUSTHED
-window.addEventListener("online", () => console.log("Synk til backend her"));
-window.addEventListener("offline", () => console.log("Offline – gemmer lokalt"));
-
-//version 26. marts//
 </script>
 
 </body>
