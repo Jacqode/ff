@@ -47,6 +47,9 @@
 <h3>Pauser over tid</h3>
 <canvas id="pauseChart" width="400" height="200"></canvas>
 
+<h3>Pauser i dag – fordelt over dagen</h3>
+<canvas id="timeChart" width="400" height="200"></canvas>
+
 <h2>Team stats</h2>
 <div>Team pauser i dag: <span id="teamToday">0</span></div>
 <div>Team pauser i alt: <span id="teamTotal">0</span></div>
@@ -197,44 +200,38 @@ doneBtn.onclick = () => {
 };
 </script>
 
-<!-- GRAF (ENESTE ÆNDRING) -->
+<!-- TIDS-GRAF -->
 <script>
 window.addEventListener("load", () => {
-    const canvas = document.getElementById("pauseChart");
+    const canvas = document.getElementById("timeChart");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
 
-    const days = [];
-    let offset = 0;
-    while (days.length < 10) {
-        const d = new Date();
-        d.setDate(d.getDate() - offset++);
-        if (d.getDay() === 0 || d.getDay() === 6) continue;
-        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-    }
-    days.reverse();
+    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
+    const counts = Array(hours.length).fill(0);
 
-    const events = Data.getEvents().filter(e => e.userId === user.id);
-    const counts = days.map(day =>
-        events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
-    );
+    const today = new Date().toDateString();
+
+    Data.getEvents()
+        .filter(e => e.userId === user.id && new Date(e.createdAt).toDateString() === today)
+        .forEach(e => {
+            const h = new Date(e.createdAt).getHours();
+            if (h >= 8 && h <= 18) counts[h - 8]++;
+        });
 
     new Chart(ctx, {
-        type: "line",
+        type: "bar",
         data: {
-            labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+            labels: hours.map(h => `${h}:00`),
             datasets: [{
                 data: counts,
-                borderColor:"#007bff",
-                backgroundColor:"rgba(0,123,255,0.15)",
-                fill:true,
-                tension:0.3
+                backgroundColor: "rgba(40,167,69,0.5)"
             }]
         },
         options: {
-            plugins:{legend:{display:false}},
-            scales:{y:{beginAtZero:true}}
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 });
