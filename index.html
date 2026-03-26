@@ -59,7 +59,7 @@
 
 <hr>
 
-<!-- ADMIN OVERBLIK (midlertidigt) -->
+<!-- ADMIN OVERBLIK -->
 <h2>Organisationer</h2>
 <ul id="orgList"></ul>
 
@@ -132,165 +132,113 @@ if (!user) {
     const orgId = q.org || "org_default";
     const teamId = q.team || "team_default";
 
-    let org = Data.getOrgs().find(o => o.id === orgId);
-    if (!org) {
-        org = { id: orgId, name: q.orgName || "Ukendt organisation" };
-        Data.saveOrg(org);
-    }
+    if (!Data.getOrgs().find(o => o.id === orgId))
+        Data.saveOrg({ id: orgId, name: q.orgName || "Ukendt organisation" });
 
-    let team = Data.getTeams().find(t => t.id === teamId && t.orgId === orgId);
-    if (!team) {
-        team = { id: teamId, orgId: orgId, name: q.teamName || "Standard team" };
-        Data.saveTeam(team);
-    }
+    if (!Data.getTeams().find(t => t.id === teamId))
+        Data.saveTeam({ id: teamId, orgId, name: q.teamName || "Standard team" });
 
-    user = {
-        id: "user_" + Math.random().toString(36).slice(2),
-        name: "ukendt",
-        orgId,
-        teamId
-    };
+    user = { id: "user_" + Math.random().toString(36).slice(2), name: "ukendt", orgId, teamId };
     Data.saveUser(user);
 }
 
 // ----------------------
-// RENDER FUNKTIONER
+// RENDER
 // ----------------------
 function sameDay(a, b) {
-    const d1 = new Date(a);
-    const d2 = new Date(b);
-    return d1.toDateString() === d2.toDateString();
+    return new Date(a).toDateString() === new Date(b).toDateString();
 }
 
 function renderStats() {
     const events = Data.getEvents();
     const now = Date.now();
 
-    const userEvents = events.filter(e => e.userId === user.id);
-    const userToday = userEvents.filter(e => sameDay(e.createdAt, now));
-
-    const teamEvents = events.filter(e => e.teamId === user.teamId);
-    const teamToday = teamEvents.filter(e => sameDay(e.createdAt, now));
-
-    todayCount.textContent = userToday.length;
-    totalCount.textContent = userEvents.length;
-    teamToday.textContent = teamToday.length;
-    teamTotal.textContent = teamEvents.length;
+    todayCount.textContent = events.filter(e => e.userId === user.id && sameDay(e.createdAt, now)).length;
+    totalCount.textContent = events.filter(e => e.userId === user.id).length;
+    teamToday.textContent = events.filter(e => e.teamId === user.teamId && sameDay(e.createdAt, now)).length;
+    teamTotal.textContent = events.filter(e => e.teamId === user.teamId).length;
 }
 
 function renderFeed() {
     feed.innerHTML = "";
-    Data.getEvents()
-        .filter(e => e.teamId === user.teamId)
-        .slice(0, 5)
-        .forEach(e => {
-            const div = document.createElement("div");
-            div.textContent = `${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}`;
-            feed.appendChild(div);
-        });
+    Data.getEvents().filter(e => e.teamId === user.teamId).slice(0,5).forEach(e => {
+        feed.innerHTML += `<div>${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}</div>`;
+    });
 }
 
 function renderAdmin() {
-    orgList.innerHTML = "";
-    teamList.innerHTML = "";
-    userList.innerHTML = "";
-
-    Data.getOrgs().forEach(o => orgList.innerHTML += `<li>${o.id} – ${o.name}</li>`);
-    Data.getTeams().forEach(t => teamList.innerHTML += `<li>${t.id} – ${t.name}</li>`);
-    Data.getUsers().forEach(u => userList.innerHTML += `<li>${u.id} – ${u.name}</li>`);
+    orgList.innerHTML = Data.getOrgs().map(o => `<li>${o.name}</li>`).join("");
+    teamList.innerHTML = Data.getTeams().map(t => `<li>${t.name}</li>`).join("");
+    userList.innerHTML = Data.getUsers().map(u => `<li>${u.name}</li>`).join("");
 }
 
 function initUI() {
     nameInput.value = user.name === "ukendt" ? "" : user.name;
     orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
     teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
-
-    renderStats();
-    renderFeed();
-    renderAdmin();
+    renderStats(); renderFeed(); renderAdmin();
 }
 initUI();
 
 // ----------------------
 // HANDLERS
 // ----------------------
-nameInput.onchange = e => {
-    user.name = e.target.value || "ukendt";
-    Data.saveUser(user);
-    renderAdmin();
-};
+nameInput.onchange = e => { user.name = e.target.value || "ukendt"; Data.saveUser(user); renderAdmin(); };
 
 getActivityBtn.onclick = () => {
     activityText.textContent = ["Stå‑kat","Skulderrul","Læg‑løft","Ryst kroppen"][Math.floor(Math.random()*4)];
 };
 
 doneBtn.onclick = () => {
-    Data.addEvent({
-        id: crypto.randomUUID(),
-        orgId: user.orgId,
-        teamId: user.teamId,
-        userId: user.id,
-        activity: activityText.textContent,
-        createdAt: Date.now()
-    });
-
+    Data.addEvent({ id: crypto.randomUUID(), orgId: user.orgId, teamId: user.teamId, userId: user.id, activity: activityText.textContent, createdAt: Date.now() });
     micro.style.display = "block";
     setTimeout(() => micro.style.display = "none", 2000);
-
-    renderStats();
-    renderFeed();
-    renderAdmin();
+    renderStats(); renderFeed(); renderAdmin();
 };
 </script>
 
-<!-- GRAF (ISOLERET) -->
+<!-- GRAF (ENESTE ÆNDRING) -->
 <script>
-(function () {
-    function lastWeekdays(n) {
-        const days = [];
-        let offset = 0;
-        const today = new Date();
+window.addEventListener("load", () => {
+    const canvas = document.getElementById("pauseChart");
+    if (!canvas) return;
 
-        while (days.length < n) {
-            const d = new Date(today);
-            d.setDate(today.getDate() - offset++);
-            if (d.getDay() === 0 || d.getDay() === 6) continue;
-            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-        }
-        return days.reverse();
+    const ctx = canvas.getContext("2d");
+
+    const days = [];
+    let offset = 0;
+    while (days.length < 10) {
+        const d = new Date();
+        d.setDate(d.getDate() - offset++);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+        days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     }
+    days.reverse();
 
-    window.addEventListener("load", () => {
-        if (!window.Data || !window.user) return;
+    const events = Data.getEvents().filter(e => e.userId === user.id);
+    const counts = days.map(day =>
+        events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
+    );
 
-        const days = lastWeekdays(10);
-        const events = Data.getEvents().filter(e => e.userId === user.id);
-
-        const counts = days.map(day =>
-            events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
-        );
-
-        new Chart(pauseChart, {
-            type: "line",
-            data: {
-                labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
-                datasets: [{
-                    data: counts,
-                    borderColor: "#007bff",
-                    backgroundColor: "rgba(0,123,255,0.15)",
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
+            datasets: [{
+                data: counts,
+                borderColor:"#007bff",
+                backgroundColor:"rgba(0,123,255,0.15)",
+                fill:true,
+                tension:0.3
+            }]
+        },
+        options: {
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true}}
+        }
     });
-})();
+});
 </script>
 
 </body>
 </html>
-
