@@ -1,566 +1,473 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>Flow Focus</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            margin: 0;
-            padding: 16px;
-            background: #f5f5f7;
-            color: #111827;
+        canvas {
+            max-width: 320px;
+            max-height: 160px;
+            display: block;
+            margin: 0 0 16px 0;
         }
 
-        h1, h2, h3 {
-            margin: 0 0 8px;
+        .charts-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        .chart-block h3 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 16px;
         }
 
-        .card {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+        .chart-block {
+            text-align: center;
         }
 
-        button {
-            cursor: pointer;
-            border-radius: 999px;
-            border: none;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            background: #2563eb;
-            color: #ffffff;
+        .energy-inputs {
+            display:flex;
+            gap:8px;
+            align-items:center;
+            margin-top:8px;
+            flex-wrap:wrap;
         }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
-
-        .secondary-btn {
-            background: #e5e7eb;
-            color: #111827;
+        .energy-button {
+            padding:6px 10px;
+            border-radius:4px;
+            border:1px solid #ccc;
+            background:#f8f9fa;
+            cursor:pointer;
         }
 
         .small-muted {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .col {
-            flex: 1 1 260px;
-        }
-
-        /* Scatter chart container */
-        #energyScatterContainer {
-            height: 260px;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Feed */
-        .feed-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 14px;
-        }
-
-        .feed-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Modals */
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.45);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-
-        .modal {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 360px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(15, 23, 42, 0.25);
-        }
-
-        .modal h3 {
-            margin-bottom: 12px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .energy-btn {
-            flex: 0 0 calc(20% - 8px);
-            text-align: center;
-            padding: 6px 0;
-            border-radius: 999px;
-            border: 1px solid #d1d5db;
-            background: #f9fafb;
-            font-size: 13px;
-        }
-
-        .energy-btn.selected {
-            background: #2563eb;
-            color: #ffffff;
-            border-color: #2563eb;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .modal-footer {
-            margin-top: 16px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: #eff6ff;
-            color: #1d4ed8;
-            font-size: 11px;
-            font-weight: 500;
+            font-size:12px;
+            color:#666;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="card">
-        <h1>Flow Focus</h1>
-        <div class="small-muted">Mikropauser, energi og fokus – uden støj.</div>
-    </div>
+//version 27.03.26 virke med energi og pausetracking og scatter dog uden påmindelse
+<h1>Flow Focus</h1>
 
-    <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div>
-                <div class="small-muted">Bruger</div>
-                <strong id="userName">Hej</strong>
-            </div>
-            <div>
-                <div class="small-muted">Team</div>
-                <span id="teamName">Ingen</span>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button id="getActivityBtn">Få aktivitet</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="card col">
-            <h2>Energi over tid</h2>
-            <div class="small-muted">Hver mikropause måles før og efter – og vises her.</div>
-            <div id="energyScatterContainer">
-                <canvas id="energyScatter"></canvas>
-            </div>
-        </div>
-
-        <div class="card col">
-            <h2>Dit team</h2>
-            <div class="small-muted">Seneste mikropauser i dit team.</div>
-            <div id="teamFeed"></div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Indstillinger</h2>
-        <div class="small-muted">Her kan du senere vælge team, sprog m.m.</div>
-    </div>
+<!-- USER INFO -->
+<div>
+    <label>Navn:
+        <input id="nameInput" placeholder="Dit navn">
+    </label>
 </div>
 
-<!-- Flow 1: Energi før -->
-<div id="energyBeforeBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-        <h3>Hvordan er din energi lige nu?</h3>
-        <div class="small-muted">Vælg et tal fra 0–10. 0 = helt flad, 10 = fuld energi.</div>
-        <div id="energyBeforeButtons" class="modal-buttons"></div>
-        <div class="modal-footer">
-            <button class="secondary-btn" id="cancelFlowBtn">Luk</button>
-            <button id="confirmEnergyBeforeBtn" disabled>Videre</button>
-        </div>
-    </div>
+<div>
+    <label>Organisation:
+        <input id="orgInput" readonly style="background:#eee;">
+    </label>
 </div>
 
-<!-- Flow 1: Aktivitet -->
-<div id="activityBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-        <h3>Din mikropause</h3>
-        <div id="activityText" style="margin-bottom:8px;"></div>
-        <div class="small-muted">Brug 1–3 minutter. Når du er færdig, måler vi din energi igen.</div>
-        <div class="modal-footer">
-            <button class="secondary-btn" id="cancelActivityBtn">Afbryd</button>
-            <button id="doneActivityBtn">Jeg er færdig</button>
-        </div>
-    </div>
+<div>
+    <label>Team:
+        <input id="teamInput" readonly style="background:#eee;">
+    </label>
 </div>
 
-<!-- Flow 1: Energi efter -->
-<div id="energyAfterBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-        <h3>Hvordan er din energi nu?</h3>
-        <div class="small-muted">Vælg et tal fra 0–10 igen.</div>
-        <div id="energyAfterButtons" class="modal-buttons"></div>
-        <div class="modal-footer">
-            <button class="secondary-btn" id="cancelEnergyAfterBtn">Afbryd</button>
-            <button id="confirmEnergyAfterBtn" disabled>Se effekt</button>
-        </div>
+<hr>
+
+<!-- ACTIVITY -->
+<h2>Aktivitet</h2>
+<button id="getActivityBtn">Få aktivitet</button>
+<div id="activityText">Ingen aktivitet endnu</div>
+<button id="doneBtn">Færdig</button>
+<div id="micro" style="display:none;">Godt gået!</div>
+
+<hr>
+
+<!-- STATS -->
+<h2>Dine stats</h2>
+<div>Pauser i dag: <span id="todayCount">0</span></div>
+<div>Pauser i alt: <span id="totalCount">0</span></div>
+
+<!-- ENERGI MÅLING -->
+<div style="margin-top:10px;">
+    <div><strong>Hvordan føles din energi lige nu?</strong></div>
+    <div class="energy-inputs" id="dailyEnergyInputs">
+        <!-- knapper genereres af JS -->
     </div>
+    <div class="small-muted">Gemmer som 0–10, bruges til at måle effekt over dagen</div>
+    <div style="margin-top:8px;">Seneste energi: <span id="lastEnergy">Ingen</span></div>
 </div>
 
-<!-- Flow 1: Feedback -->
-<div id="feedbackBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-        <h3>Din energiændring</h3>
-        <div id="feedbackText" style="margin-bottom:8px;"></div>
-        <div class="small-muted">Din ændring vises også i grafen “Energi over tid”.</div>
-        <div class="modal-footer">
-            <button id="closeFeedbackBtn">OK</button>
-        </div>
-    </div>
+<hr>
+
+<!-- GRAF-DASHBOARD -->
+<div class="charts-row">
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div style="max-width:980px;margin:0 0 24px;">
+    <h3 style="text-align:left;">Energi‑effekt af mikropauser over dagen</h3>
+    <canvas id="energyScatter"></canvas>
+    <p class="small-muted" style="text-align:left;max-width:600px;margin:8px 0 0;">
+        Hver prik viser én mikropause. X‑aksen viser tidspunktet på dagen, Y‑aksen viser ændringen i energi efter pausen.
+        Prikker over 0 betyder, at pausen gav mere energi.
+    </p>
+</div>
+
+<h2>Team stats</h2>
+<div>Team pauser i dag: <span id="teamToday">0</span></div>
+<div>Team pauser i alt: <span id="teamTotal">0</span></div>
+
+<hr>
+
+<!-- FEED -->
+<h2>Team feed</h2>
+<div id="feed"></div>
+
+<hr>
+
+<!-- ADMIN OVERBLIK -->
+<h2>Organisationer</h2>
+<ul id="orgList"></ul>
+
+<h2>Teams</h2>
+<ul id="teamList"></ul>
+
+<h2>Brugere</h2>
+<ul id="userList"></ul>
+
 <script>
-    // --- Simple data layer (localStorage-baseret) -----------------------------
+// ----------------------
+// DATA SERVICE (udvidet med energyChecks)
+// ----------------------
+const Data = {
+    getOrgs() { return JSON.parse(localStorage.getItem("orgs") || "[]"); },
+    saveOrg(org) {
+        const orgs = this.getOrgs();
+        const idx = orgs.findIndex(o => o.id === org.id);
+        if (idx === -1) orgs.push(org); else orgs[idx] = org;
+        localStorage.setItem("orgs", JSON.stringify(orgs));
+    },
 
-    const Data = {
-        _load(key) {
-            try {
-                return JSON.parse(localStorage.getItem(key) || "[]");
-            } catch {
-                return [];
-            }
-        },
-        _save(key, value) {
-            localStorage.setItem(key, JSON.stringify(value));
-        },
-        getUser() {
-            // Simpel single-user stub
-            return { id: "user-1", name: "Jack", teamId: "team-1", teamName: "Ingen" };
-        },
-        getEnergyChecks() {
-            return this._load("energyChecks");
-        },
-        saveEnergyCheck(check) {
-            const all = this.getEnergyChecks();
-            all.unshift(check);
-            this._save("energyChecks", all);
-        },
-        getEvents() {
-            return this._load("events");
-        },
-        saveEvent(evt) {
-            const all = this.getEvents();
-            all.unshift(evt);
-            this._save("events", all);
-        },
-        getTeamEvents(teamId) {
-            return this.getEvents().filter(e => e.teamId === teamId);
-        },
-        getRandomActivity() {
-            const activities = [
-                "Rejs dig op, rul skuldrene og tag 5 dybe vejrtrækninger.",
-                "Kig væk fra skærmen og fokuser på et punkt langt væk i 30 sekunder.",
-                "Stræk nakke og ryg roligt i 1 minut.",
-                "Gå langsomt hen til et vindue og kig ud i 1–2 minutter.",
-                "Ryst hænder og arme, som om du ryster spænding af dig."
-            ];
-            const idx = Math.floor(Math.random() * activities.length);
-            return { text: activities[idx] };
+    getTeams() { return JSON.parse(localStorage.getItem("teams") || "[]"); },
+    saveTeam(team) {
+        const teams = this.getTeams();
+        const idx = teams.findIndex(t => t.id === team.id);
+        if (idx === -1) teams.push(team); else teams[idx] = team;
+        localStorage.setItem("teams", JSON.stringify(teams));
+    },
+
+    getUsers() { return JSON.parse(localStorage.getItem("users") || "[]"); },
+    saveUser(user) {
+        const users = this.getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (idx === -1) users.push(user); else users[idx] = user;
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("currentUserId", user.id);
+    },
+    getCurrentUser() {
+        const id = localStorage.getItem("currentUserId");
+        if (!id) return null;
+        return this.getUsers().find(u => u.id === id) || null;
+    },
+
+    addEvent(event) {
+        const events = JSON.parse(localStorage.getItem("events") || "[]");
+        events.unshift(event);
+        localStorage.setItem("events", JSON.stringify(events));
+    },
+    getEvents() { return JSON.parse(localStorage.getItem("events") || "[]"); },
+
+    // Energi checks: { value: number, createdAt: timestamp, userId }
+    getEnergyChecks() { return JSON.parse(localStorage.getItem("energyChecks") || "[]"); },
+    saveEnergyCheck(check) {
+        const arr = this.getEnergyChecks();
+        arr.unshift(check);
+        localStorage.setItem("energyChecks", JSON.stringify(arr));
+    }
+};
+
+// ----------------------
+// URL ONBOARDING
+// ----------------------
+function parseQuery() {
+    const params = {};
+    window.location.search.replace(/^\?/, "").split("&").forEach(p => {
+        if (!p) return;
+        const [k, v] = p.split("=");
+        params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+    });
+    return params;
+}
+
+let user = Data.getCurrentUser();
+
+if (!user) {
+    const q = parseQuery();
+    const orgId = q.org || "org_default";
+    const teamId = q.team || "team_default";
+
+    if (!Data.getOrgs().find(o => o.id === orgId))
+        Data.saveOrg({ id: orgId, name: q.orgName || "Ukendt organisation" });
+
+    if (!Data.getTeams().find(t => t.id === teamId))
+        Data.saveTeam({ id: teamId, orgId, name: q.teamName || "Standard team" });
+
+    user = { id: "user_" + Math.random().toString(36).slice(2), name: "ukendt", orgId, teamId };
+    Data.saveUser(user);
+}
+
+// ----------------------
+// RENDER
+// ----------------------
+function sameDay(a, b) {
+    return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+function renderStats() {
+    const events = Data.getEvents();
+    const now = Date.now();
+
+    todayCount.textContent = events.filter(e => e.userId === user.id && sameDay(e.createdAt, now)).length;
+    totalCount.textContent = events.filter(e => e.userId === user.id).length;
+    teamToday.textContent = events.filter(e => e.teamId === user.teamId && sameDay(e.createdAt, now)).length;
+    teamTotal.textContent = events.filter(e => e.teamId === user.teamId).length;
+
+    const energyChecks = Data.getEnergyChecks().filter(c => c.userId === user.id);
+    if (energyChecks.length) {
+        lastEnergy.textContent = energyChecks[0].value;
+    } else {
+        lastEnergy.textContent = "Ingen";
+    }
+}
+
+function renderFeed() {
+    feed.innerHTML = "";
+    Data.getEvents().filter(e => e.teamId === user.teamId).slice(0,5).forEach(e => {
+        const energyInfo = (e.energyBefore !== undefined || e.energyAfter !== undefined)
+            ? ` <span class="small-muted">(${e.energyBefore ?? '-'}→${e.energyAfter ?? '-'})</span>` : "";
+        feed.innerHTML += `<div>${e.activity} – ${new Date(e.createdAt).toLocaleTimeString("da-DK")}${energyInfo}</div>`;
+    });
+}
+
+function renderAdmin() {
+    orgList.innerHTML = Data.getOrgs().map(o => `<li>${o.name}</li>`).join("");
+    teamList.innerHTML = Data.getTeams().map(t => `<li>${t.name}</li>`).join("");
+    userList.innerHTML = Data.getUsers().map(u => `<li>${u.name}</li>`).join("");
+}
+
+function initUI() {
+    nameInput.value = user.name === "ukendt" ? "" : user.name;
+    orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
+    teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
+    renderStats(); renderFeed(); renderAdmin();
+    renderEnergyButtons();
+}
+initUI();
+
+// ----------------------
+// HANDLERS
+// ----------------------
+nameInput.onchange = e => { user.name = e.target.value || "ukendt"; Data.saveUser(user); renderAdmin(); };
+
+getActivityBtn.onclick = () => {
+    // Når brugeren beder om en aktivitet, spørg om energyBefore (valgfrit)
+    const before = prompt("Hvordan føles din energi lige nu? (0–10) — valgfrit, tryk Annuller for at springe over");
+    let energyBefore = undefined;
+    if (before !== null) {
+        const v = parseInt(before);
+        if (!isNaN(v) && v >= 0 && v <= 10) {
+            energyBefore = v;
+            Data.saveEnergyCheck({ value: v, createdAt: Date.now(), userId: user.id });
+            renderStats();
+            renderEnergyChart();
         }
-    };
-
-    // --- State ---------------------------------------------------------------
-
-    const user = Data.getUser();
-    let currentFlow = {
-        beforeValue: null,
-        afterValue: null,
-        activity: null,
-        startedAt: null
-    };
-
-    // --- DOM refs ------------------------------------------------------------
-
-    const getActivityBtn = document.getElementById("getActivityBtn");
-    const userNameEl = document.getElementById("userName");
-    const teamNameEl = document.getElementById("teamName");
-    const teamFeedEl = document.getElementById("teamFeed");
-
-    const energyBeforeBackdrop = document.getElementById("energyBeforeBackdrop");
-    const energyAfterBackdrop = document.getElementById("energyAfterBackdrop");
-    const activityBackdrop = document.getElementById("activityBackdrop");
-    const feedbackBackdrop = document.getElementById("feedbackBackdrop");
-
-    const energyBeforeButtons = document.getElementById("energyBeforeButtons");
-    const energyAfterButtons = document.getElementById("energyAfterButtons");
-    const confirmEnergyBeforeBtn = document.getElementById("confirmEnergyBeforeBtn");
-    const confirmEnergyAfterBtn = document.getElementById("confirmEnergyAfterBtn");
-    const cancelFlowBtn = document.getElementById("cancelFlowBtn");
-    const cancelActivityBtn = document.getElementById("cancelActivityBtn");
-    const cancelEnergyAfterBtn = document.getElementById("cancelEnergyAfterBtn");
-    const doneActivityBtn = document.getElementById("doneActivityBtn");
-    const closeFeedbackBtn = document.getElementById("closeFeedbackBtn");
-    const activityTextEl = document.getElementById("activityText");
-    const feedbackTextEl = document.getElementById("feedbackText");
-
-    // --- Scatter chart setup -------------------------------------------------
-
-    const scatterCtx = document.getElementById("energyScatter").getContext("2d");
-    let scatterChart = null;
-
-    function buildScatterData() {
-        const checks = Data.getEnergyChecks().filter(c => c.userId === user.id);
-        // Vi grupperer i par: before/after med samme flowId (her simplificeret via createdAt nærhed)
-        const points = [];
-        for (let i = 0; i < checks.length; i++) {
-            const c = checks[i];
-            points.push({
-                x: new Date(c.createdAt),
-                y: c.value,
-                type: c.type
-            });
-        }
-        return points;
     }
 
-    function renderScatter() {
-        const points = buildScatterData();
+    activityText.textContent = ["Stå‑kat","Skulderrul","Læg‑løft","Ryst kroppen"][Math.floor(Math.random()*4)];
+    // Gem midlertidigt energyBefore på et globalt sted, så doneBtn kan bruge det
+    window._pendingEnergyBefore = energyBefore;
+};
 
-        const data = {
-            datasets: [
-                {
-                    label: "Energi",
-                    data: points.map(p => ({ x: p.x, y: p.y })),
-                    pointBackgroundColor: points.map(p => p.type === "before" ? "#f97316" : "#22c55e"),
-                    pointRadius: 4,
-                    showLine: false
-                }
-            ]
+doneBtn.onclick = () => {
+    // Når brugeren afslutter en pause, spørg om energyAfter (parret måling)
+    const after = prompt("Hvordan føles din energi nu? (0–10) — valgfrit, tryk Annuller for at springe over");
+    let energyAfter = undefined;
+    if (after !== null) {
+        const v = parseInt(after);
+        if (!isNaN(v) && v >= 0 && v <= 10) {
+            energyAfter = v;
+            Data.saveEnergyCheck({ value: v, createdAt: Date.now(), userId: user.id });
+        }
+    }
+
+    const activity = activityText.textContent || "Pause";
+    const event = {
+        id: crypto.randomUUID(),
+        orgId: user.orgId,
+        teamId: user.teamId,
+        userId: user.id,
+        activity,
+        createdAt: Date.now(),
+        energyBefore: window._pendingEnergyBefore,
+        energyAfter
+    };
+    Data.addEvent(event);
+    // ryd pending
+    window._pendingEnergyBefore = undefined;
+
+    micro.style.display = "block";
+    setTimeout(() => micro.style.display = "none", 2000);
+    renderStats(); renderFeed(); renderAdmin();
+    renderEnergyChart();
+};
+
+// ----------------------
+// Daglig energi UI
+// ----------------------
+function renderEnergyButtons() {
+    const container = document.getElementById("dailyEnergyInputs");
+    container.innerHTML = "";
+    // Vi viser 11 knapper 0..10 (studier bruger 0-10 VAS)
+    for (let i = 0; i <= 10; i++) {
+        const btn = document.createElement("button");
+        btn.className = "energy-button";
+        btn.textContent = i;
+        btn.onclick = () => {
+            Data.saveEnergyCheck({ value: i, createdAt: Date.now(), userId: user.id });
+            renderStats();
+            renderEnergyChart();
         };
+        container.appendChild(btn);
+    }
+}
 
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
+// ----------------------
+// GRAFER
+// ----------------------
+
+// ENERGI GRAF (linje) - viser de seneste 30 energimålinger
+function renderEnergyChart() {
+    const canvas = document.getElementById("energyChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const checks = Data.getEnergyChecks().filter(c => c.userId === user.id).slice(0, 30).reverse();
+    const labels = checks.map(c => new Date(c.createdAt).toLocaleString("da-DK", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }));
+    const values = checks.map(c => c.value);
+    if (window._energyChartInstance) {
+        window._energyChartInstance.destroy();
+    }
+    window._energyChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels,
+            datasets: [{
+                label: "Energi (0–10)",
+                data: values,
+                borderColor: "#6f42c1",
+                backgroundColor: "rgba(111,66,193,0.12)",
+                fill: true,
+                tension: 0.25,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 10, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+// initial render af energi graf
+renderEnergyChart();
+
+function renderEnergyScatter() {
+    const canvas = document.getElementById("energyScatter");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const events = Data.getEvents().filter(e =>
+        e.userId === user.id &&
+        typeof e.energyBefore === "number" &&
+        typeof e.energyAfter === "number"
+    );
+
+    const activityColors = {
+        "Stå‑kat": "#0d6efd",
+        "Skulderrul": "#198754",
+        "Ryst kroppen": "#fd7e14",
+        "Læg‑løft": "#6f42c1"
+    };
+
+    const datasets = {};
+
+    events.forEach(e => {
+        const t = new Date(e.createdAt);
+        const x = t.getHours() + t.getMinutes() / 60;
+        const y = e.energyAfter - e.energyBefore;
+
+        if (!datasets[e.activity]) {
+            datasets[e.activity] = {
+                label: e.activity,
+                data: [],
+                backgroundColor: activityColors[e.activity] || "#999"
+            };
+        }
+
+        datasets[e.activity].data.push({
+            x,
+            y,
+            meta: `${e.activity} – ${t.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"})} (${e.energyBefore}→${e.energyAfter})`
+        });
+    });
+
+    if (window._energyScatterInstance) {
+        window._energyScatterInstance.destroy();
+    }
+
+    window._energyScatterInstance = new Chart(ctx, {
+        type: "scatter",
+        data: { datasets: Object.values(datasets) },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.raw.meta
+                    }
+                },
+                legend: { position: "bottom" }
+            },
             scales: {
                 x: {
-                    type: "time",
-                    time: { unit: "minute" },
-                    ticks: { autoSkip: true, maxTicksLimit: 5 }
+                    title: { display: true, text: "Tidspunkt på dagen" },
+                    min: 8,
+                    max: 18,
+                    ticks: {
+                        callback: v =>
+                            `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2,"0")}`
+                    }
                 },
                 y: {
-                    min: 0,
-                    max: 10,
+                    title: { display: true, text: "Energi‑ændring (efter − før)" },
                     ticks: { stepSize: 1 }
                 }
-            },
-            plugins: {
-                legend: { display: false }
             }
-        };
-
-        if (scatterChart) {
-            scatterChart.data = data;
-            scatterChart.options = options;
-            scatterChart.update();
-        } else {
-            scatterChart = new Chart(scatterCtx, {
-                type: "scatter",
-                data,
-                options
-            });
         }
-    }
+    });
+}
 
-    // --- Team feed -----------------------------------------------------------
+// render scatter-graf for energi-effekten
+renderEnergyScatter();
 
-    function renderTeamFeed() {
-        const events = Data.getTeamEvents(user.teamId);
-        if (!events.length) {
-            teamFeedEl.innerHTML = '<div class="small-muted">Ingen mikropauser endnu.</div>';
-            return;
-        }
-        teamFeedEl.innerHTML = events
-            .slice(0, 10)
-            .map(e => {
-                const d = new Date(e.createdAt);
-                const time = d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" });
-                return `<div class="feed-item">
-                    <span class="tag">${time}</span>
-                    <span style="margin-left:8px;">${e.userName || "Kollega"} tog en mikropause</span>
-                </div>`;
-            })
-            .join("");
-    }
-
-    // --- Flow 1: helpers -----------------------------------------------------
-
-    function openEnergyBefore() {
-        currentFlow = {
-            beforeValue: null,
-            afterValue: null,
-            activity: null,
-            startedAt: Date.now()
-        };
-        renderEnergyButtons(energyBeforeButtons, "before");
-        confirmEnergyBeforeBtn.disabled = true;
-        energyBeforeBackdrop.classList.remove("hidden");
-    }
-
-    function openActivity() {
-        currentFlow.activity = Data.getRandomActivity();
-        activityTextEl.textContent = currentFlow.activity.text;
-        activityBackdrop.classList.remove("hidden");
-    }
-
-    function openEnergyAfter() {
-        renderEnergyButtons(energyAfterButtons, "after");
-        confirmEnergyAfterBtn.disabled = true;
-        energyAfterBackdrop.classList.remove("hidden");
-    }
-
-    function openFeedback() {
-        const diff = currentFlow.afterValue - currentFlow.beforeValue;
-        let text;
-        if (diff > 0) {
-            text = `Din energi steg med +${diff}.`;
-        } else if (diff < 0) {
-            text = `Din energi faldt med ${diff}.`;
-        } else {
-            text = "Din energi er uændret.";
-        }
-        feedbackTextEl.textContent = text;
-        feedbackBackdrop.classList.remove("hidden");
-    }
-
-    function closeAllModals() {
-        energyBeforeBackdrop.classList.add("hidden");
-        activityBackdrop.classList.add("hidden");
-        energyAfterBackdrop.classList.add("hidden");
-        feedbackBackdrop.classList.add("hidden");
-    }
-
-    function renderEnergyButtons(container, type) {
-        container.innerHTML = "";
-        for (let i = 0; i <= 10; i++) {
-            const btn = document.createElement("button");
-            btn.className = "energy-btn";
-            btn.textContent = i;
-            btn.onclick = () => {
-                Array.from(container.children).forEach(c => c.classList.remove("selected"));
-                btn.classList.add("selected");
-                if (type === "before") {
-                    currentFlow.beforeValue = i;
-                    confirmEnergyBeforeBtn.disabled = false;
-                } else {
-                    currentFlow.afterValue = i;
-                    confirmEnergyAfterBtn.disabled = false;
-                }
-            };
-            container.appendChild(btn);
-        }
-    }
-
-    // --- Event wiring --------------------------------------------------------
-
-    getActivityBtn.onclick = () => {
-        openEnergyBefore();
-    };
-
-    confirmEnergyBeforeBtn.onclick = () => {
-        Data.saveEnergyCheck({
-            userId: user.id,
-            value: currentFlow.beforeValue,
-            type: "before",
-            createdAt: Date.now()
-        });
-        energyBeforeBackdrop.classList.add("hidden");
-        openActivity();
-    };
-
-    doneActivityBtn.onclick = () => {
-        activityBackdrop.classList.add("hidden");
-        openEnergyAfter();
-    };
-
-    confirmEnergyAfterBtn.onclick = () => {
-        const now = Date.now();
-        Data.saveEnergyCheck({
-            userId: user.id,
-            value: currentFlow.afterValue,
-            type: "after",
-            createdAt: now
-        });
-        // Log event til feed
-        Data.saveEvent({
-            userId: user.id,
-            userName: user.name,
-            teamId: user.teamId,
-            createdAt: now
-        });
-        energyAfterBackdrop.classList.add("hidden");
-        renderScatter();
-        renderTeamFeed();
-        openFeedback();
-    };
-
-    cancelFlowBtn.onclick = () => {
-        closeAllModals();
-    };
-    cancelActivityBtn.onclick = () => {
-        closeAllModals();
-    };
-    cancelEnergyAfterBtn.onclick = () => {
-        closeAllModals();
-    };
-    closeFeedbackBtn.onclick = () => {
-        closeAllModals();
-    };
-
-    // --- Init ----------------------------------------------------------------
-
-    function init() {
-        userNameEl.textContent = `Hej ${user.name}`;
-        teamNameEl.textContent = user.teamName || "Ingen";
-        renderScatter();
-        renderTeamFeed();
-    }
-
-    init();
 </script>
+
 </body>
 </html>
+
