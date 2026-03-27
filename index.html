@@ -92,16 +92,6 @@
 <div>Pauser i dag: <span id="todayCount">0</span></div>
 <div>Pauser i alt: <span id="totalCount">0</span></div>
 
-<!-- ENERGI MÅLING -->
-<div style="margin-top:10px;">
-    <div><strong>Hvordan føles din energi lige nu?</strong></div>
-    <div class="energy-inputs" id="dailyEnergyInputs">
-        <!-- knapper genereres af JS -->
-    </div>
-    <div class="small-muted">Gemmer som 0–10, bruges til at måle effekt over dagen</div>
-    <div style="margin-top:8px;">Seneste energi: <span id="lastEnergy">Ingen</span></div>
-</div>
-
 <hr>
 
 <!-- GRAF-DASHBOARD -->
@@ -265,7 +255,6 @@ function initUI() {
     orgInput.value = Data.getOrgs().find(o => o.id === user.orgId)?.name || "";
     teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
     renderStats(); renderFeed(); renderAdmin();
-    renderEnergyButtons();
 }
 initUI();
 
@@ -284,7 +273,6 @@ getActivityBtn.onclick = () => {
             energyBefore = v;
             Data.saveEnergyCheck({ value: v, createdAt: Date.now(), userId: user.id });
             renderStats();
-            renderEnergyChart();
         }
     }
 
@@ -325,26 +313,6 @@ doneBtn.onclick = () => {
     renderStats(); renderFeed(); renderAdmin();
     renderEnergyChart();
 };
-
-// ----------------------
-// Daglig energi UI
-// ----------------------
-function renderEnergyButtons() {
-    const container = document.getElementById("dailyEnergyInputs");
-    container.innerHTML = "";
-    // Vi viser 11 knapper 0..10 (studier bruger 0-10 VAS)
-    for (let i = 0; i <= 10; i++) {
-        const btn = document.createElement("button");
-        btn.className = "energy-button";
-        btn.textContent = i;
-        btn.onclick = () => {
-            Data.saveEnergyCheck({ value: i, createdAt: Date.now(), userId: user.id });
-            renderStats();
-            renderEnergyChart();
-        };
-        container.appendChild(btn);
-    }
-}
 
 // ----------------------
 // GRAFER
