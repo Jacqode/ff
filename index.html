@@ -44,9 +44,14 @@
 <!-- STATS -->
 <h2>Dine stats</h2>
 
-<!-- ENERGI MÅLING (skjult UI, bevaret mekanik) -->
-<div style="margin-top:10px; display:none;">
-    <div class="energy-inputs" id="dailyEnergyInputs"></div>
+<!-- ENERGI MÅLING -->
+<div style="margin-top:10px;">
+    <div><strong>Hvordan føles din energi lige nu?</strong></div>
+    <div class="energy-inputs" id="dailyEnergyInputs">
+        <!-- knapper genereres af JS -->
+    </div>
+    <div class="small-muted">Gemmer som 0–10, bruges til at måle effekt over dagen</div>
+    <div style="margin-top:8px;">Seneste energi: <span id="lastEnergy">Ingen</span></div>
 </div>
 
 <hr>
