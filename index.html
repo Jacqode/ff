@@ -135,6 +135,11 @@
     </div>
 </div>
 
+<div style="max-width:980px;margin:0 auto 24px;">
+    <h3 style="text-align:center;">Energi‑effekt af mikropauser over dagen</h3>
+    <canvas id="energyScatter"></canvas>
+</div>
+
 <h2>Team stats</h2>
 <div>Team pauser i dag: <span id="teamToday">0</span></div>
 <div>Team pauser i alt: <span id="teamTotal">0</span></div>
@@ -491,6 +496,85 @@ function renderEnergyChart() {
 
 // initial render af energi graf
 renderEnergyChart();
+
+function renderEnergyScatter() {
+    const canvas = document.getElementById("energyScatter");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const events = Data.getEvents().filter(e =>
+        e.userId === user.id &&
+        typeof e.energyBefore === "number" &&
+        typeof e.energyAfter === "number"
+    );
+
+    const activityColors = {
+        "Stå‑kat": "#0d6efd",
+        "Skulderrul": "#198754",
+        "Ryst kroppen": "#fd7e14",
+        "Læg‑løft": "#6f42c1"
+    };
+
+    const datasets = {};
+
+    events.forEach(e => {
+        const t = new Date(e.createdAt);
+        const x = t.getHours() + t.getMinutes() / 60;
+        const y = e.energyAfter - e.energyBefore;
+
+        if (!datasets[e.activity]) {
+            datasets[e.activity] = {
+                label: e.activity,
+                data: [],
+                backgroundColor: activityColors[e.activity] || "#999"
+            };
+        }
+
+        datasets[e.activity].data.push({
+            x,
+            y,
+            meta: `${e.activity} – ${t.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"})} (${e.energyBefore}→${e.energyAfter})`
+        });
+    });
+
+    if (window._energyScatterInstance) {
+        window._energyScatterInstance.destroy();
+    }
+
+    window._energyScatterInstance = new Chart(ctx, {
+        type: "scatter",
+        data: { datasets: Object.values(datasets) },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.raw.meta
+                    }
+                },
+                legend: { position: "bottom" }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: "Tidspunkt på dagen" },
+                    min: 8,
+                    max: 18,
+                    ticks: {
+                        callback: v =>
+                            `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2,"0")}`
+                    }
+                },
+                y: {
+                    title: { display: true, text: "Energi‑ændring (efter − før)" },
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+// kald efter renderEnergyChart()
+renderEnergyScatter();
 
 </script>
 
