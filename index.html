@@ -107,12 +107,6 @@
 <!-- GRAF-DASHBOARD -->
 <div class="charts-row">
 
-<!-- ENERGI GRAF -->
-<div style="max-width:980px;margin:0 auto 24px;">
-    <div style="text-align:center;">
-        <h3>Energi over tid (seneste målinger)</h3>
-        <canvas id="energyChart"></canvas>
-    </div>
 </div>
 
 <div style="max-width:980px;margin:0 auto 24px;">
@@ -268,7 +262,6 @@ function initUI() {
     teamInput.value = Data.getTeams().find(t => t.id === user.teamId)?.name || "";
     renderStats(); renderFeed(); renderAdmin();
     renderEnergyButtons();
-    renderEnergyChart();
 }
 initUI();
 
@@ -466,7 +459,7 @@ function renderEnergyScatter() {
     });
 }
 
-// kald efter renderEnergyChart()
+// render scatter-graf for energi-effekt
 renderEnergyScatter();
 
 </script>
