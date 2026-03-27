@@ -107,26 +107,6 @@
 <!-- GRAF-DASHBOARD -->
 <div class="charts-row">
 
-    <!-- VENSTRE -->
-    <div class="chart-block">
-        <h3>Pauser i dag – fordelt over dagen</h3>
-        <canvas id="timeChart"></canvas>
-    </div>
-
-    <!-- MIDTEN -->
-    <div class="chart-block">
-        <h3>Pauser seneste 10 dage – fordelt over dagen</h3>
-        <canvas id="totalTimeChart"></canvas>
-    </div>
-
-    <!-- HØJRE -->
-    <div class="chart-block">
-        <h3>Pauser pr. dag</h3>
-        <canvas id="pauseChart"></canvas>
-    </div>
-
-</div>
-
 <!-- ENERGI GRAF -->
 <div style="max-width:980px;margin:0 auto 24px;">
     <div style="text-align:center;">
@@ -372,93 +352,6 @@ function renderEnergyButtons() {
 // ----------------------
 // GRAFER
 // ----------------------
-
-// PAUSER PR. DAG (line)
-window.addEventListener("load", () => {
-    const canvasPause = document.getElementById("pauseChart");
-    if (canvasPause) {
-        const ctx = canvasPause.getContext("2d");
-        const days = [];
-        let offset = 0;
-        while (days.length < 10) {
-            const d = new Date();
-            d.setDate(d.getDate() - offset++);
-            if (d.getDay() === 0 || d.getDay() === 6) continue;
-            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-        }
-        days.reverse();
-        const events = Data.getEvents().filter(e => e.userId === user.id);
-        const counts = days.map(day =>
-            events.filter(e => new Date(e.createdAt).toDateString() === day.toDateString()).length
-        );
-        new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: days.map(d => d.toLocaleDateString("da-DK",{weekday:"short",day:"numeric"})),
-                datasets: [{
-                    data: counts,
-                    borderColor:"#007bff",
-                    backgroundColor:"rgba(0,123,255,0.15)",
-                    fill:true,
-                    tension:0.3
-                }]
-            },
-            options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
-        });
-    }
-});
-
-// PAUSER I DAG (bar)
-window.addEventListener("load", () => {
-    const canvas = document.getElementById("timeChart");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
-    const counts = Array(hours.length).fill(0);
-    const today = new Date().toDateString();
-    Data.getEvents()
-        .filter(e => e.userId === user.id && new Date(e.createdAt).toDateString() === today)
-        .forEach(e => {
-            const h = new Date(e.createdAt).getHours();
-            if (h >= 8 && h <= 18) counts[h - 8]++;
-        });
-    new Chart(ctx, {
-        type: "bar",
-        data: { labels: hours.map(h => `${h}:00`), datasets: [{ data: counts, backgroundColor: "rgba(40,167,69,0.5)" }] },
-        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-    });
-});
-
-// PAUSER SENESTE 10 DAGE (bar)
-window.addEventListener("load", () => {
-    const canvas = document.getElementById("totalTimeChart");
-    if (canvas) {
-        const ctx = canvas.getContext("2d");
-        const hours = Array.from({ length: 11 }, (_, i) => i + 8);
-        const counts = Array(hours.length).fill(0);
-        const days = [];
-        let offset = 0;
-        while (days.length < 10) {
-            const d = new Date();
-            d.setDate(d.getDate() - offset++);
-            if (d.getDay() === 0 || d.getDay() === 6) continue;
-            days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-        }
-        const events = Data.getEvents().filter(e => {
-            const d = new Date(e.createdAt);
-            return days.some(day => d.toDateString() === day.toDateString());
-        });
-        events.forEach(e => {
-            const h = new Date(e.createdAt).getHours();
-            if (h >= 8 && h <= 18) counts[h - 8]++;
-        });
-        new Chart(ctx, {
-            type: "bar",
-            data: { labels: hours.map(h => `${h}:00`), datasets: [{ data: counts, backgroundColor: "rgba(255,159,64,0.6)" }] },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
-    }
-});
 
 // ENERGI GRAF (linje) - viser de seneste 30 energimålinger
 function renderEnergyChart() {
