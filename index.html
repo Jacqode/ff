@@ -89,6 +89,8 @@
 
 <!-- STATS -->
 <h2>Dine stats</h2>
+<div>Pauser i dag: <span id="todayCount">0</span></div>
+<div>Pauser i alt: <span id="totalCount">0</span></div>
 
 <hr>
 
@@ -107,6 +109,8 @@
 </div>
 
 <h2>Team stats</h2>
+<div>Team pauser i dag: <span id="teamToday">0</span></div>
+<div>Team pauser i alt: <span id="teamTotal">0</span></div>
 
 <hr>
 
@@ -217,6 +221,11 @@ function sameDay(a, b) {
 function renderStats() {
     const events = Data.getEvents();
     const now = Date.now();
+
+    todayCount.textContent = events.filter(e => e.userId === user.id && sameDay(e.createdAt, now)).length;
+    totalCount.textContent = events.filter(e => e.userId === user.id).length;
+    teamToday.textContent = events.filter(e => e.teamId === user.teamId && sameDay(e.createdAt, now)).length;
+    teamTotal.textContent = events.filter(e => e.teamId === user.teamId).length;
 
     const energyChecks = Data.getEnergyChecks().filter(c => c.userId === user.id);
     if (energyChecks.length) {
