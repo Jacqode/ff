@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistical Workflow</title>
+</head>
+<body>
+
+<h1>Organizing a statistical problem</h1>
+
+<p><strong>State:</strong> Hvad er det praktiske spørgsmål i konteksten? Hvad vil vi estimere om populationen, og hvorfor betyder det noget?</p>
+<p><strong>Formulate:</strong> Hvilke statistiske operationer kræves: estimatorer, sammenligninger, covariater, subgrupper, og hvilke antagelser accepteres?</p>
+<p><strong>Solve:</strong> Udfør dataopsætning, visualiseringer og beregninger; rapportér punktestimat, konfidensinterval og relevante diagnostikker.</p>
+<p><strong>Conclude:</strong> Hvad betyder estimatet praktisk for vores beslutning? Hvilke handlinger anbefales, og hvilke begrænsninger gælder?</p>
+
+<h2>Estimater og usikkerhed</h2>
+
+<p>Estimater er kun gæt og der er usikkerhed ved et ethvert gæt.</p>
+
+<p><strong>State:</strong></p>
+<p><strong>Formulate:</strong> What specific statistical operations does this problem call for?</p>
+<p><strong>Solve:</strong> Let's make the graphs and carry out the calculations needed for this problem.</p>
+<p><strong>Conclude:</strong></p>
+
+<h2>Praktiske tilføjelser til workflowet</h2>
+
+<p>Pre‑analysis plan: Notér estimand, primær outcome, covariater og stop‑regler før dataindsamling.</p>
+<p>Estimand‑skabelon: Angiv population, intervention, outcome, tidsvindue og kontrast (fx gennemsnitlig ændring i subjektiv energi 5 min efter pause vs før).</p>
+<p>Diagnostik: Inkluder checks for missingness, balance (ved eksperiment), og modelfit.</p>
+<p>Rapportering: Altid punktestimat + 95% CI + effektstørrelse + antal observationer per gruppe.</p>
+
+<h2>Eksempel anvendt på mikropauser (kort)</h2>
+
+<p><strong>State:</strong> Vil en 3‑min aktiv mikropause øge subjektiv energi 5 minutter efter pausen blandt kontorbrugere?</p>
+<p><strong>Formulate:</strong> Estimand = gennemsnitlig forskel i energiskala (0–10) før vs 5 min efter; estimator = difference‑in‑means; juster for baseline energi og tid på dagen.</p>
+<p><strong>Solve:</strong> Visualiser før/efter, beregn d og 95% CI, kør mixed‑effects model hvis gentagne målinger pr. bruger.</p>
+<p><strong>Conclude:</strong> Rapportér estimeret ændring ± CI, tolk praktisk betydning (fx &gt;0.3 SD som meningsfuld), og anbefal A/B‑implementering eller videre test.</p>
+
+</body>
+</html>
