@@ -412,17 +412,54 @@ function renderEnergyScatter() {
 renderEnergyScatter();
 
 </script>
+<!-- ========================= -->
+<!-- FLOW FOCUS REMINDER HTML -->
+<!-- ========================= -->
+
+<!-- GLOBAL REMINDER -->
+<div id="ff-reminder" hidden>
+  <p id="ff-activity-text">Aktivitet: …</p>
+  <button id="ff-done-btn">Jeg har gjort det</button>
+</div>
+
+<!-- ENERGI-EFTER -->
+<div id="ff-energy-after" hidden>
+  <h3>Hvordan er din energi nu?</h3>
+  <button data-energy="mindre">Mindre</button>
+  <button data-energy="uændret">Uændret</button>
+  <button data-energy="større">Større</button>
+  <button data-energy="ved_ikke">Ved ikke</button>
+</div>
+
+<!-- INDSTILLING AF INTERVAL -->
+<div id="ff-settings">
+  <h3>Påmindelses-interval</h3>
+
+  <label>
+    Antal minutter:
+    <input id="ff-interval-input" type="number" step="0.1" min="0.1" value="25">
+  </label>
+
+  <button id="ff-interval-save">Gem</button>
+
+  <p id="ff-current-interval">Aktuelt interval: 25 min</p>
+</div>
+
+
+<!-- ========================= -->
+<!-- FLOW FOCUS REMINDER JS   -->
+<!-- ========================= -->
 <script>
 // ------------------------------------------------------------
-// Flow Focus – Minimal påmindelsesflow
+// FLOW FOCUS – Reminder + Energi-efter + Fri interval-indstilling
 // ------------------------------------------------------------
 
-// Aktiviteter (kan udvides)
+// Aktiviteter
 const ACTIVITIES = [
   "Stræk skuldrene i 20 sek.",
   "Rejs dig og sæt dig 5 gange.",
-  "Rul nakken langsomt i 10 sek.",
   "Tag 5 dybe vejrtrækninger.",
+  "Rul nakken langsomt i 10 sek.",
   "Gå 20 sekunder på stedet."
 ];
 
@@ -432,12 +469,17 @@ const activityText = document.getElementById("ff-activity-text");
 const doneBtn = document.getElementById("ff-done-btn");
 const energyAfter = document.getElementById("ff-energy-after");
 
-// Interval (kan gøres bruger-valgbart senere)
-let REMINDER_INTERVAL = 25 * 60 * 1000; // 25 min default
+// Interval-elementer
+const intervalInput = document.getElementById("ff-interval-input");
+const intervalSave = document.getElementById("ff-interval-save");
+const intervalText = document.getElementById("ff-current-interval");
+
+// Interval (default 25 min)
+let REMINDER_INTERVAL = 25 * 60 * 1000;
 let reminderTimer = null;
 
 // ------------------------------------------------------------
-// 1) VIS PÅMINDELSE
+// VIS PÅMINDELSE
 // ------------------------------------------------------------
 function showReminder() {
   const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
@@ -446,7 +488,7 @@ function showReminder() {
 }
 
 // ------------------------------------------------------------
-// 2) BRUGER HAR GJORT AKTIVITET
+// BRUGER HAR GJORT AKTIVITET
 // ------------------------------------------------------------
 doneBtn.addEventListener("click", () => {
   reminder.hidden = true;
@@ -454,20 +496,14 @@ doneBtn.addEventListener("click", () => {
 });
 
 // ------------------------------------------------------------
-// 3) BRUGER VÆLGER ENERGI-EFTER
+// BRUGER VÆLGER ENERGI-EFTER
 // ------------------------------------------------------------
 energyAfter.addEventListener("click", (e) => {
   if (!e.target.dataset.energy) return;
 
-  const result = e.target.dataset.energy;
+  console.log("Energi efter:", e.target.dataset.energy);
 
-  // Log til console (kan sendes til backend)
-  console.log("Energi efter:", result);
-
-  // Luk overlay
   energyAfter.hidden = true;
-
-  // Start ny timer
   scheduleReminder();
 });
 
@@ -481,21 +517,27 @@ function scheduleReminder() {
 
 // Start første reminder
 scheduleReminder();
-</script>
-<!-- GLOBAL REMINDER (vises nederst højre) -->
-<div id="ff-reminder" hidden>
-  <p id="ff-activity-text">Aktivitet: Stræk skuldrene i 20 sek.</p>
-  <button id="ff-done-btn">Jeg har gjort det</button>
-</div>
 
-<!-- ENERGI-EFTER OVERLAY -->
-<div id="ff-energy-after" hidden>
-  <h3>Hvordan er din energi nu?</h3>
-  <button data-energy="mindre">Mindre</button>
-  <button data-energy="uændret">Uændret</button>
-  <button data-energy="større">Større</button>
-  <button data-energy="ved_ikke">Ved ikke</button>
-</div>
+// ------------------------------------------------------------
+// FRI INTERVAL-INDSTILLING
+// ------------------------------------------------------------
+function updateIntervalText() {
+  intervalText.textContent = "Aktuelt interval: " + (REMINDER_INTERVAL / 60000) + " min";
+}
+
+intervalSave.addEventListener("click", () => {
+  const minutes = Number(intervalInput.value);
+
+  if (!minutes || minutes < 0.1) return;
+
+  REMINDER_INTERVAL = minutes * 60 * 1000;
+  updateIntervalText();
+  scheduleReminder();
+});
+
+// Init
+updateIntervalText();
+</script>
 
 </body>
 </html>
