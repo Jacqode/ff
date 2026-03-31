@@ -412,6 +412,90 @@ function renderEnergyScatter() {
 renderEnergyScatter();
 
 </script>
+<script>
+// ------------------------------------------------------------
+// Flow Focus – Minimal påmindelsesflow
+// ------------------------------------------------------------
+
+// Aktiviteter (kan udvides)
+const ACTIVITIES = [
+  "Stræk skuldrene i 20 sek.",
+  "Rejs dig og sæt dig 5 gange.",
+  "Rul nakken langsomt i 10 sek.",
+  "Tag 5 dybe vejrtrækninger.",
+  "Gå 20 sekunder på stedet."
+];
+
+// Elementer
+const reminder = document.getElementById("ff-reminder");
+const activityText = document.getElementById("ff-activity-text");
+const doneBtn = document.getElementById("ff-done-btn");
+const energyAfter = document.getElementById("ff-energy-after");
+
+// Interval (kan gøres bruger-valgbart senere)
+let REMINDER_INTERVAL = 25 * 60 * 1000; // 25 min default
+let reminderTimer = null;
+
+// ------------------------------------------------------------
+// 1) VIS PÅMINDELSE
+// ------------------------------------------------------------
+function showReminder() {
+  const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
+  activityText.textContent = "Aktivitet: " + randomActivity;
+  reminder.hidden = false;
+}
+
+// ------------------------------------------------------------
+// 2) BRUGER HAR GJORT AKTIVITET
+// ------------------------------------------------------------
+doneBtn.addEventListener("click", () => {
+  reminder.hidden = true;
+  energyAfter.hidden = false;
+});
+
+// ------------------------------------------------------------
+// 3) BRUGER VÆLGER ENERGI-EFTER
+// ------------------------------------------------------------
+energyAfter.addEventListener("click", (e) => {
+  if (!e.target.dataset.energy) return;
+
+  const result = e.target.dataset.energy;
+
+  // Log til console (kan sendes til backend)
+  console.log("Energi efter:", result);
+
+  // Luk overlay
+  energyAfter.hidden = true;
+
+  // Start ny timer
+  scheduleReminder();
+});
+
+// ------------------------------------------------------------
+// TIMER
+// ------------------------------------------------------------
+function scheduleReminder() {
+  if (reminderTimer) clearTimeout(reminderTimer);
+  reminderTimer = setTimeout(showReminder, REMINDER_INTERVAL);
+}
+
+// Start første reminder
+scheduleReminder();
+</script>
+<!-- GLOBAL REMINDER (vises nederst højre) -->
+<div id="ff-reminder" hidden>
+  <p id="ff-activity-text">Aktivitet: Stræk skuldrene i 20 sek.</p>
+  <button id="ff-done-btn">Jeg har gjort det</button>
+</div>
+
+<!-- ENERGI-EFTER OVERLAY -->
+<div id="ff-energy-after" hidden>
+  <h3>Hvordan er din energi nu?</h3>
+  <button data-energy="mindre">Mindre</button>
+  <button data-energy="uændret">Uændret</button>
+  <button data-energy="større">Større</button>
+  <button data-energy="ved_ikke">Ved ikke</button>
+</div>
 
 </body>
 </html>
