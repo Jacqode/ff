@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <title>Flow Focus 1.0</title>
+</head>
+<body>
+
+  <header>
+    <h1>Flow Focus 1.0</h1>
+    <div>
+      Navn: Jakob |
+      Organisation: 2300 |
+      Team: Standard team
+    </div>
+  </header>
+
+  <main>
+    <!-- Start-knap: ét klik starter hele flowet -->
+    <section id="start-section">
+      <button id="start-micropause">START MIKROPAUSE</button>
+    </section>
+
+    <!-- FLOW 1: Energi før -->
+    <section id="energy-before-overlay">
+      <h2>Hvordan føles din energi lige nu?</h2>
+      <div>
+        <button>0</button>
+        <button>1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button>6</button>
+        <button>7</button>
+        <button>8</button>
+        <button>9</button>
+        <button>10</button>
+      </div>
+    </section>
+
+    <!-- FLOW 1: Aktivitet -->
+    <section id="activity-overlay">
+      <h2>Gør din mikropause nu.</h2>
+      <p>Fx: stræk skuldre, rejs/sæt dig, gå 30 sekunder.</p>
+      <button id="activity-done">FÆRDIG</button>
+    </section>
+
+    <!-- FLOW 1: Energi efter -->
+    <section id="energy-after-overlay">
+      <h2>Hvordan føles din energi nu?</h2>
+      <div>
+        <button>0</button>
+        <button>1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button>6</button>
+        <button>7</button>
+        <button>8</button>
+        <button>9</button>
+        <button>10</button>
+      </div>
+    </section>
+
+    <!-- Scatterplot / dine stats -->
+    <section id="stats-section">
+      <h2>Dine stats</h2>
+      <p>Energi-effekt af mikropauser over dagen (scatterplot placeholder).</p>
+    </section>
+
+    <!-- Team feed -->
+    <section id="team-feed-section">
+      <h2>Team feed</h2>
+      <ul>
+        <li>...</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Global påmindelse (konceptuelt nederste højre hjørne) -->
+  <section id="global-reminder">
+    <p>🔔 Mikropause klar? Klik for at måle energi.</p>
+  </section>
+
+</body>
+</html>
