@@ -411,64 +411,8 @@ function renderEnergyScatter() {
 renderEnergyScatter();
 
 </script>
-<!-- ========================= -->
-<!-- FLOW FOCUS REMINDER BOX  -->
-<!-- ========================= -->
-
 <style>
-  /* Boksen i nederste højre hjørne */
-  #ff-box {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: white;
-    border: 1px solid #ccc;
-    padding: 14px;
-    border-radius: 8px;
-    width: 260px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-family: sans-serif;
-    z-index: 9999;
-  }
-  #ff-box[hidden] { display: none; }
-
-  #ff-box button {
-    margin: 4px 0;
-    width: 100%;
-  }
-</style>
-
-<div id="ff-box" hidden>
-  <div id="ff-step-activity">
-    <p id="ff-activity-text">Aktivitet: …</p>
-    <button id="ff-done-btn">Jeg har gjort det</button>
-  </div>
-
-  <div id="ff-step-energy" hidden>
-    <h4>Hvordan er din energi nu?</h4>
-    <button data-energy="mindre">Mindre</button>
-    <button data-energy="uændret">Uændret</button>
-    <button data-energy="større">Større</button>
-    <button data-energy="ved_ikke">Ved ikke</button>
-  </div>
-
-  <div id="ff-step-settings" style="margin-top:10px;">
-    <label>
-      Interval (minutter):
-      <input id="ff-interval-input" type="number" step="0.1" min="0.1" value="25">
-    </label>
-    <button id="ff-interval-save">Gem</button>
-    <p id="ff-current-interval" style="font-size:12px; margin-top:6px;">
-      Aktuelt interval: 25 min
-    </p>
-  </div>
-</div>
-
-<!-- ========================= -->
-<!-- REMINDER-BOKS (HJØRNE)   -->
-<!-- ========================= -->
-
-<style>
+  /* Reminder-boks i nederste højre hjørne */
   #ff-box {
     position: fixed;
     bottom: 20px;
@@ -486,6 +430,7 @@ renderEnergyScatter();
   #ff-box button { width: 100%; margin: 4px 0; }
 </style>
 
+<!-- Reminder-boks (kun aktivitet + energi-efter) -->
 <div id="ff-box" hidden>
   <div id="ff-step-activity">
     <p id="ff-activity-text">Aktivitet: …</p>
@@ -501,10 +446,7 @@ renderEnergyScatter();
   </div>
 </div>
 
-<!-- ========================= -->
-<!-- INTERVAL PÅ SELVE SIDEN  -->
-<!-- ========================= -->
-
+<!-- Interval på siden (kun én gang!) -->
 <div id="ff-settings">
   <h3>Påmindelses-interval</h3>
 
@@ -513,111 +455,87 @@ renderEnergyScatter();
     <input id="ff-interval-input" type="number" step="0.1" min="0.1" value="25">
   </label>
 
-  <button id="ff-interval-save">Gem</button>
+  <button id="ff-interval-save" type="button">Gem</button>
 
   <p id="ff-current-interval">Aktuelt interval: 25 min</p>
 </div>
 
-<!-- ========================= -->
-<!-- JAVASCRIPT               -->
-<!-- ========================= -->
-
 <script>
-// Aktiviteter
-const ACTIVITIES = [
-  "Stræk skuldrene i 20 sek.",
-  "Rejs dig og sæt dig 5 gange.",
-  "Tag 5 dybe vejrtrækninger.",
-  "Rul nakken langsomt i 10 sek.",
-  "Gå 20 sekunder på stedet."
-];
+  // Aktiviteter
+  const ACTIVITIES = [
+    "Stræk skuldrene i 20 sek.",
+    "Rejs dig og sæt dig 5 gange.",
+    "Tag 5 dybe vejrtrækninger.",
+    "Rul nakken langsomt i 10 sek.",
+    "Gå 20 sekunder på stedet."
+  ];
 
-// Elementer
-const box = document.getElementById("ff-box");
-const stepActivity = document.getElementById("ff-step-activity");
-const stepEnergy = document.getElementById("ff-step-energy");
-const activityText = document.getElementById("ff-activity-text");
-const doneBtn = document.getElementById("ff-done-btn");
+  // Reminder-elementer
+  const box = document.getElementById("ff-box");
+  const stepActivity = document.getElementById("ff-step-activity");
+  const stepEnergy = document.getElementById("ff-step-energy");
+  const activityText = document.getElementById("ff-activity-text");
+  const doneBtn = document.getElementById("ff-done-btn");
 
-// Interval-elementer (på siden)
-const intervalInput = document.getElementById("ff-interval-input");
-const intervalSave = document.getElementById("ff-interval-save");
-const intervalText = document.getElementById("ff-current-interval");
-
-// Interval (default 25 min)
-let REMINDER_INTERVAL = 25 * 60 * 1000;
-let reminderTimer = null;
-
-// VIS REMINDER
-function showReminder() {
-  const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
-  activityText.textContent = "Aktivitet: " + randomActivity;
-
-  stepActivity.hidden = false;
-  stepEnergy.hidden = true;
-
-  box.hidden = false;
-}
-
-// BRUGER HAR GJORT AKTIVITET
-doneBtn.addEventListener("click", () => {
-  stepActivity.hidden = true;
-  stepEnergy.hidden = false;
-});
-
-// BRUGER VÆLGER ENERGI-EFTER
-stepEnergy.addEventListener("click", (e) => {
-  if (!e.target.dataset.energy) return;
-
-  console.log("Energi efter:", e.target.dataset.energy);
-
-  box.hidden = true;
-  scheduleReminder();
-});
-
-// TIMER
-function scheduleReminder() {
-  if (reminderTimer) clearTimeout(reminderTimer);
-  reminderTimer = setTimeout(showReminder, REMINDER_INTERVAL);
-}
-
-// Start første reminder
-scheduleReminder();
-
-// INTERVAL-INDSTILLING (på siden)
-<script>
-/* ===== Interval-indstilling (robust mod dubletter) ===== */
-(function () {
+  // Settings-elementer (på siden)
   const settings = document.getElementById("ff-settings");
-  if (!settings) return;
+  const intervalInput = settings.querySelector("#ff-interval-input");
+  const intervalSave = settings.querySelector("#ff-interval-save");
+  const intervalText = settings.querySelector("#ff-current-interval");
 
-  const input = settings.querySelector("#ff-interval-input");
-  const save = settings.querySelector("#ff-interval-save");
-  const text = settings.querySelector("#ff-current-interval");
+  // Interval
+  let REMINDER_INTERVAL = 25 * 60 * 1000;
+  let reminderTimer = null;
 
-  if (!input || !save || !text) return;
+  function showReminder() {
+    const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
+    activityText.textContent = "Aktivitet: " + randomActivity;
 
-  function apply(minutes) {
+    stepActivity.hidden = false;
+    stepEnergy.hidden = true;
+    box.hidden = false;
+  }
+
+  doneBtn.addEventListener("click", () => {
+    stepActivity.hidden = true;
+    stepEnergy.hidden = false;
+  });
+
+  stepEnergy.addEventListener("click", (e) => {
+    if (!e.target.dataset.energy) return;
+
+    console.log("Energi efter:", e.target.dataset.energy);
+
+    box.hidden = true;
+    scheduleReminder();
+  });
+
+  function scheduleReminder() {
+    if (reminderTimer) clearTimeout(reminderTimer);
+    reminderTimer = setTimeout(showReminder, REMINDER_INTERVAL);
+  }
+
+  function setMinutes(minutes) {
     const m = Number(minutes);
     if (!m || m < 0.1) return;
 
     REMINDER_INTERVAL = m * 60 * 1000;
-    input.value = m;
-    text.textContent = "Aktuelt interval: " + m + " min";
-
+    intervalInput.value = String(m);
+    intervalText.textContent = "Aktuelt interval: " + m + " min";
     scheduleReminder();
   }
 
-  // Init med nuværende værdi
-  text.textContent = "Aktuelt interval: " + (REMINDER_INTERVAL / 60000) + " min";
+  // Init tekst
+  intervalText.textContent = "Aktuelt interval: " + (REMINDER_INTERVAL / 60000) + " min";
 
-  save.addEventListener("click", () => {
-    apply(input.value);
+  intervalSave.addEventListener("click", () => {
+    setMinutes(intervalInput.value);
   });
-})();
+
+  // Start
+  scheduleReminder();
 </script>
 
-</script>
 
 </body>
 </html>
