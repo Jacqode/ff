@@ -413,45 +413,61 @@ renderEnergyScatter();
 
 </script>
 <!-- ========================= -->
-<!-- FLOW FOCUS REMINDER HTML -->
+<!-- FLOW FOCUS REMINDER BOX  -->
 <!-- ========================= -->
 
-<!-- GLOBAL REMINDER -->
-<div id="ff-reminder" hidden>
-  <p id="ff-activity-text">Aktivitet: …</p>
-  <button id="ff-done-btn">Jeg har gjort det</button>
+<style>
+  /* Boksen i nederste højre hjørne */
+  #ff-box {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 14px;
+    border-radius: 8px;
+    width: 260px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: sans-serif;
+    z-index: 9999;
+  }
+  #ff-box[hidden] { display: none; }
+
+  #ff-box button {
+    margin: 4px 0;
+    width: 100%;
+  }
+</style>
+
+<div id="ff-box" hidden>
+  <div id="ff-step-activity">
+    <p id="ff-activity-text">Aktivitet: …</p>
+    <button id="ff-done-btn">Jeg har gjort det</button>
+  </div>
+
+  <div id="ff-step-energy" hidden>
+    <h4>Hvordan er din energi nu?</h4>
+    <button data-energy="mindre">Mindre</button>
+    <button data-energy="uændret">Uændret</button>
+    <button data-energy="større">Større</button>
+    <button data-energy="ved_ikke">Ved ikke</button>
+  </div>
+
+  <div id="ff-step-settings" style="margin-top:10px;">
+    <label>
+      Interval (minutter):
+      <input id="ff-interval-input" type="number" step="0.1" min="0.1" value="25">
+    </label>
+    <button id="ff-interval-save">Gem</button>
+    <p id="ff-current-interval" style="font-size:12px; margin-top:6px;">
+      Aktuelt interval: 25 min
+    </p>
+  </div>
 </div>
 
-<!-- ENERGI-EFTER -->
-<div id="ff-energy-after" hidden>
-  <h3>Hvordan er din energi nu?</h3>
-  <button data-energy="mindre">Mindre</button>
-  <button data-energy="uændret">Uændret</button>
-  <button data-energy="større">Større</button>
-  <button data-energy="ved_ikke">Ved ikke</button>
-</div>
-
-<!-- INDSTILLING AF INTERVAL -->
-<div id="ff-settings">
-  <h3>Påmindelses-interval</h3>
-
-  <label>
-    Antal minutter:
-    <input id="ff-interval-input" type="number" step="0.1" min="0.1" value="25">
-  </label>
-
-  <button id="ff-interval-save">Gem</button>
-
-  <p id="ff-current-interval">Aktuelt interval: 25 min</p>
-</div>
-
-
-<!-- ========================= -->
-<!-- FLOW FOCUS REMINDER JS   -->
-<!-- ========================= -->
 <script>
 // ------------------------------------------------------------
-// FLOW FOCUS – Reminder + Energi-efter + Fri interval-indstilling
+// FLOW FOCUS – Reminder i nederste højre hjørne
 // ------------------------------------------------------------
 
 // Aktiviteter
@@ -464,10 +480,11 @@ const ACTIVITIES = [
 ];
 
 // Elementer
-const reminder = document.getElementById("ff-reminder");
+const box = document.getElementById("ff-box");
+const stepActivity = document.getElementById("ff-step-activity");
+const stepEnergy = document.getElementById("ff-step-energy");
 const activityText = document.getElementById("ff-activity-text");
 const doneBtn = document.getElementById("ff-done-btn");
-const energyAfter = document.getElementById("ff-energy-after");
 
 // Interval-elementer
 const intervalInput = document.getElementById("ff-interval-input");
@@ -484,26 +501,30 @@ let reminderTimer = null;
 function showReminder() {
   const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
   activityText.textContent = "Aktivitet: " + randomActivity;
-  reminder.hidden = false;
+
+  stepActivity.hidden = false;
+  stepEnergy.hidden = true;
+
+  box.hidden = false;
 }
 
 // ------------------------------------------------------------
 // BRUGER HAR GJORT AKTIVITET
 // ------------------------------------------------------------
 doneBtn.addEventListener("click", () => {
-  reminder.hidden = true;
-  energyAfter.hidden = false;
+  stepActivity.hidden = true;
+  stepEnergy.hidden = false;
 });
 
 // ------------------------------------------------------------
 // BRUGER VÆLGER ENERGI-EFTER
 // ------------------------------------------------------------
-energyAfter.addEventListener("click", (e) => {
+stepEnergy.addEventListener("click", (e) => {
   if (!e.target.dataset.energy) return;
 
   console.log("Energi efter:", e.target.dataset.energy);
 
-  energyAfter.hidden = true;
+  box.hidden = true;
   scheduleReminder();
 });
 
@@ -527,7 +548,6 @@ function updateIntervalText() {
 
 intervalSave.addEventListener("click", () => {
   const minutes = Number(intervalInput.value);
-
   if (!minutes || minutes < 0.1) return;
 
   REMINDER_INTERVAL = minutes * 60 * 1000;
@@ -535,7 +555,6 @@ intervalSave.addEventListener("click", () => {
   scheduleReminder();
 });
 
-// Init
 updateIntervalText();
 </script>
 
