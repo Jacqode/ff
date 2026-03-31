@@ -585,20 +585,38 @@ function scheduleReminder() {
 scheduleReminder();
 
 // INTERVAL-INDSTILLING (på siden)
-function updateIntervalText() {
-  intervalText.textContent = "Aktuelt interval: " + (REMINDER_INTERVAL / 60000) + " min";
-}
+<script>
+/* ===== Interval-indstilling (robust mod dubletter) ===== */
+(function () {
+  const settings = document.getElementById("ff-settings");
+  if (!settings) return;
 
-intervalSave.addEventListener("click", () => {
-  const minutes = Number(intervalInput.value);
-  if (!minutes || minutes < 0.1) return;
+  const input = settings.querySelector("#ff-interval-input");
+  const save = settings.querySelector("#ff-interval-save");
+  const text = settings.querySelector("#ff-current-interval");
 
-  REMINDER_INTERVAL = minutes * 60 * 1000;
-  updateIntervalText();
-  scheduleReminder();
-});
+  if (!input || !save || !text) return;
 
-updateIntervalText();
+  function apply(minutes) {
+    const m = Number(minutes);
+    if (!m || m < 0.1) return;
+
+    REMINDER_INTERVAL = m * 60 * 1000;
+    input.value = m;
+    text.textContent = "Aktuelt interval: " + m + " min";
+
+    scheduleReminder();
+  }
+
+  // Init med nuværende værdi
+  text.textContent = "Aktuelt interval: " + (REMINDER_INTERVAL / 60000) + " min";
+
+  save.addEventListener("click", () => {
+    apply(input.value);
+  });
+})();
+</script>
+
 </script>
 
 </body>
