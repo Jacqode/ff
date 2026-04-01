@@ -8,8 +8,26 @@
 </head>
 <body>
 
-<h1>Hej👋</h1>
-<p>20–60 sekunders let aktivitet øger energien.</p>
+<h1>Flow Focus</h1>
+
+<!-- USER INFO -->
+<div>
+    <label>Navn:
+        <input id="nameInput" placeholder="Dit navn">
+    </label>
+</div>
+
+<div>
+    <label>Organisation:
+        <input id="orgInput" readonly style="background:#eee;">
+    </label>
+</div>
+
+<div>
+    <label>Team:
+        <input id="teamInput" readonly style="background:#eee;">
+    </label>
+</div>
 
 <hr>
 
@@ -536,6 +554,24 @@ renderEnergyScatter();
   <p id="ff-status"></p>
 </div>
 
+<div id="ff-settings">
+  <h3>Påmindelser</h3>
+
+  <label>
+    Interval (minutter):
+    <input id="ff-interval" type="number" min="1" step="1" value="25">
+  </label>
+
+  <label style="display:block;margin-top:8px;">
+    <input type="checkbox" id="ff-enable-notifications">
+    Aktivér OS‑notifikationer
+  </label>
+
+  <button id="ff-save-settings">Gem</button>
+
+  <p id="ff-status"></p>
+</div>
+
 <script>
 /* ===== SIMPLE OS NOTIFICATION TEST ===== */
 
@@ -566,24 +602,6 @@ function showOSReminder() {
 setTimeout(showOSReminder, 10000);
 </script>
 
-<!-- USER INFO -->
-<div>
-    <label>Navn:
-        <input id="nameInput" placeholder="Dit navn">
-    </label>
-</div>
-
-<div>
-    <label>Organisation:
-        <input id="orgInput" readonly style="background:#eee;">
-    </label>
-</div>
-
-<div>
-    <label>Team:
-        <input id="teamInput" readonly style="background:#eee;">
-    </label>
-</div>
 
 </body>
 </html>
